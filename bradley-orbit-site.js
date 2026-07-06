@@ -84,19 +84,27 @@
     const bar = document.createElement("div");
     bar.className = "site-demo-bar";
     bar.innerHTML =
-      '<p id="siteCaption" aria-live="assertive"></p><p id="siteStatus" aria-live="polite">Live demo</p><button type="button" id="siteStart">Let Bradley speak</button>';
+      '<div class="site-bradley-name">Bradley</div><p id="siteCaption" aria-live="assertive"></p><p id="siteStatus" aria-live="polite">Live demo</p><button type="button" id="siteStart">Let Bradley speak</button>';
     surface.appendChild(bar);
+  }
+
+  function setSiteHeroCopy() {
+    const top = document.querySelector("#surface > .top");
+    const title = top?.querySelector(".title");
+    const sub = top?.querySelector(".sub");
+    if (!top || !title || !sub) return;
+
+    top.classList.add("site-brand-lockup");
+    title.textContent = "BIG AV";
+    sub.innerHTML =
+      '<span class="site-eyebrow">AV is IT · AI UX · UC</span><span class="site-headline">Take control of everything.<br>Without having to do anything.</span>';
   }
 
   function initSiteMode() {
     document.body.classList.add("site-mode");
     document.documentElement.classList.add("site-mode");
 
-    const sub = document.querySelector(".top .sub");
-    if (sub) {
-      sub.textContent =
-        "Butler intelligence for home, work, and life. Voice and scenes up front — your apps connected on one layer.";
-    }
+    setSiteHeroCopy();
 
     muteMic();
     injectDemoBar();

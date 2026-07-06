@@ -31,7 +31,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "site-show-27";
+const BRADLEY_BUILD = "site-show-28";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -71,14 +71,14 @@ const BRADLEY_SCRIPT = [
     title: "Friction",
     line: "No more app-hunting, wall tapping, or guessing which screen rules what.",
     speak: "No more app-hunting, wall tapping, or guessing which screen rules what.",
-    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 0.72, lagSec: 0 }],
+    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 0.48, lagSec: 0 }],
   },
   {
     id: "beat_03",
     title: "Layer",
     line: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
     speak: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
-    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", atSec: 2.02, lagSec: 0 }],
+    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", atSec: 0.95, lagSec: 0 }],
   },
   {
     id: "beat_04",
@@ -86,8 +86,8 @@ const BRADLEY_SCRIPT = [
     line: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
-      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.0, slot: 2, lagSec: 0 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 2.45, slot: 0, lagSec: 0 },
+      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 1.45, slot: 2, lagSec: 0 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 2.12, slot: 0, lagSec: 0 },
     ],
   },
   {
@@ -198,7 +198,7 @@ let orbitRaf = 0;
 let orbitLastTs = 0;
 const spawned = new Set();
 
-function setVoiceStatus(text, isError = false) {
+function setSiteDemoStatus(text, isError = false) {
   if (!voiceStatus) return;
   voiceStatus.textContent = text;
   voiceStatus.classList.toggle("is-error", isError);
@@ -611,7 +611,7 @@ async function speakBradley(beat) {
   try {
     const audios = await loadBakedParts(beat);
     await playBeatAudio(audios, beat);
-    setVoiceStatus("Bradley is speaking");
+    setSiteDemoStatus("Bradley is speaking");
     return true;
   } catch {
     /* try live TTS when developing */
@@ -623,10 +623,10 @@ async function speakBradley(beat) {
       audios.push(await fetchLivePart(text));
     }
     await playBeatAudio(audios, beat);
-    setVoiceStatus("Bradley is speaking · live");
+    setSiteDemoStatus("Bradley is speaking · live");
     return true;
   } catch {
-    setVoiceStatus("Voice unavailable — captions only", true);
+    setSiteDemoStatus("Voice unavailable — captions only", true);
     const captionDuration = Math.max(5, fullText.length * 0.058);
     await new Promise((r) => setTimeout(r, 280));
     scheduleSpawnCues(beat.spawn, captionDuration);
@@ -1101,7 +1101,7 @@ function resetShow() {
   spawned.clear();
   if (liveAtoms) liveAtoms.innerHTML = "";
   setCaption("");
-  setVoiceStatus("Live demo");
+  setSiteDemoStatus("Live demo");
   showRunning = false;
   if (startBtn) {
     startBtn.disabled = false;
@@ -1113,13 +1113,13 @@ async function preloadBradleyVoice() {
   const results = await Promise.allSettled(BRADLEY_SCRIPT.map((beat) => loadBakedParts(beat)));
   const loaded = results.filter((result) => result.status === "fulfilled").length;
   if (loaded) {
-    setVoiceStatus(`Bradley ready · ${loaded} beats cached`);
+    setSiteDemoStatus(`Bradley ready · ${loaded} beats cached`);
   }
 }
 
 function init() {
   initShowDom();
-  setVoiceStatus("Live demo");
+  setSiteDemoStatus("Live demo");
 }
 
 window.BradleySiteShow = {
