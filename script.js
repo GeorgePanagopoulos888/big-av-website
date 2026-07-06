@@ -67,7 +67,7 @@ const PHASE2_SPAWNS = [
 const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 const SPAWN_OUTPUT_LAG_SEC = IS_TOUCH_DEVICE ? 0.28 : 0.06;
 
-const BRADLEY_BUILD = "filament-vibe-dark-14";
+const BRADLEY_BUILD = "soft-outer-halo-15";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,

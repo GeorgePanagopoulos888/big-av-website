@@ -381,37 +381,20 @@ body.bradley-speaking .live-caption:not([hidden]) {
 .core::before {
   content: "";
   position: absolute;
-  inset: -8px;
+  inset: 0;
   border-radius: 50%;
   z-index: 0;
-  border: 1px solid rgba(var(--core-rgb), calc(0.18 + var(--voice-amp) * 0.42));
-  background: radial-gradient(
-    circle,
-    transparent 0%,
-    rgba(var(--core-rgb), calc(0.02 + var(--voice-amp) * 0.05)) 46%,
-    rgba(var(--core-rgb), calc(0.06 + var(--voice-amp) * 0.1)) 54%,
-    transparent 60%
-  );
+  border: none;
+  background: transparent;
   box-shadow:
-    0 0 calc(38px + var(--voice-amp) * 46px) rgba(var(--core-rgb), calc(0.58 + var(--voice-amp) * 0.4)),
-    0 0 calc(72px + var(--voice-amp) * 38px) rgba(var(--core-rgb), calc(0.16 + var(--voice-amp) * 0.18));
+    0 0 calc(44px + var(--voice-amp) * 50px) rgba(var(--core-rgb), calc(0.55 + var(--voice-amp) * 0.38)),
+    0 0 calc(88px + var(--voice-amp) * 62px) rgba(var(--core-rgb), calc(0.14 + var(--voice-amp) * 0.16)),
+    0 0 calc(140px + var(--voice-amp) * 48px) rgba(var(--core-rgb), calc(0.04 + var(--voice-amp) * 0.08));
   transition: box-shadow 0.08s ease-out;
 }
 
 .core::after {
-  content: "";
-  position: absolute;
-  inset: 28%;
-  border-radius: 50%;
-  z-index: 1;
-  background: radial-gradient(
-    circle,
-    rgba(255, 210, 96, calc(0.06 + var(--voice-amp) * 0.14)),
-    transparent 58%
-  );
-  filter: blur(6px);
-  opacity: calc(0.18 + var(--voice-amp) * 0.22);
-  transition: opacity 0.08s ease-out;
+  content: none;
 }
 
 .core-bulb {
