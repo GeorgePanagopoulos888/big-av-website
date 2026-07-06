@@ -64,7 +64,7 @@ const PHASE2_SPAWNS = [
   { id: "approvals", label: "Approvals", rgb: "194,140,255" },
 ];
 
-const BRADLEY_BUILD = "orbit-swap-v5-timing-pass-6";
+const BRADLEY_BUILD = "mobile-nav-lights-pass-7";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -116,8 +116,8 @@ const BRADLEY_SCRIPT = [
     line: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
-      { id: "coffee", label: "Coffee", rgb: "255,191,105", at: 0.24, slot: 2 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", at: 0.43, spawnAngle: 28, avoidSlots: [2] },
+      { id: "coffee", label: "Coffee", rgb: "255,191,105", at: 0.22, slot: 2 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", at: 0.34, slot: 8 },
     ],
   },
   {
@@ -355,20 +355,30 @@ function waitAudioMeta(audio) {
   });
 }
 
-function playAudioOnly(audio) {
-  return new Promise((resolve, reject) => {
-    pauseCurrentAudio();
-    currentAudio = audio;
-    audio.onended = () => {
-      currentAudio = null;
-      resolve();
-    };
-    audio.onerror = () => {
-      currentAudio = null;
-      reject(new Error("playback failed"));
-    };
-    audio.play().catch(reject);
-  });
+async function playAudioOnly(audio) {
+  pauseCurrentAudio();
+  currentAudio = audio;
+
+  const tryPlay = () =>
+    new Promise((resolve, reject) => {
+      audio.onended = () => {
+        currentAudio = null;
+        resolve();
+      };
+      audio.onerror = () => {
+        currentAudio = null;
+        reject(new Error("playback failed"));
+      };
+      audio.play().catch(reject);
+    });
+
+  try {
+    await tryPlay();
+  } catch {
+    audio.load();
+    await new Promise((r) => setTimeout(r, 120));
+    await tryPlay();
+  }
 }
 
 async function loadBakedParts(beat) {
@@ -398,6 +408,7 @@ async function runOrbitSwap(beat) {
 }
 
 async function playBeatAudio(audios, beat) {
+  clearSpawnTimers();
   const pauseMs = beat.partPauseMs ?? 0;
   const totalSec = totalBeatDuration(audios, pauseMs);
 
@@ -513,17 +524,16 @@ function startGlow() {
   if (!bradleyCore) return;
 
   glowTimer = window.setInterval(() => {
-    const amp = 0.28 + Math.random() * 0.52;
+    const amp = 0.38 + Math.random() * 0.48;
     bradleyCore.style.setProperty("--voice-amp", amp.toFixed(2));
     liveSystem?.style.setProperty("--voice-amp", amp.toFixed(2));
-  }, 100);
+  }, 85);
 }
 
 function stopGlow() {
   document.body.classList.remove("bradley-speaking");
   if (glowTimer) window.clearInterval(glowTimer);
   glowTimer = null;
-  clearSpawnTimers();
   bradleyCore?.style.setProperty("--voice-amp", "0");
   liveSystem?.style.setProperty("--voice-amp", "0");
 }
@@ -705,9 +715,20 @@ function resetShow() {
   }
 }
 
+async function preloadBradleyVoice() {
+  try {
+    const first = BRADLEY_SCRIPT[0];
+    await loadBakedParts(first);
+  } catch {
+    /* baked voice optional until show starts */
+  }
+}
+
 if (startBtn) {
-  startBtn.addEventListener("click", () => {
+  startBtn.addEventListener("click", async () => {
     if (startBtn.textContent === "Run it again") resetShow();
+    startBtn.disabled = true;
+    await preloadBradleyVoice();
     runBradleyShow();
   });
 }
