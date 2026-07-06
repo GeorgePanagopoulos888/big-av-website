@@ -64,12 +64,17 @@ const PHASE2_SPAWNS = [
   { id: "approvals", label: "Approvals", rgb: "194,140,255" },
 ];
 
-const BRADLEY_BUILD = "audio-clock-spawns-9";
+const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+const SPAWN_OUTPUT_LAG_SEC = IS_TOUCH_DEVICE ? 0.34 : 0.06;
+
+const BRADLEY_BUILD = "audio-clock-spawns-10";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
   phase2Count: PHASE2_SPAWNS.length,
   phase2Labels: PHASE2_SPAWNS.map((atom) => atom.label),
+  touchDevice: IS_TOUCH_DEVICE,
+  spawnLagSec: SPAWN_OUTPUT_LAG_SEC,
 });
 
 window.__bradleyDebug = {
@@ -101,14 +106,14 @@ const BRADLEY_SCRIPT = [
     title: "Friction",
     line: "No more app-hunting, wall tapping, or guessing which screen rules what.",
     speak: "No more app-hunting, wall tapping, or guessing which screen rules what.",
-    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 0.85 }],
+    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 1.44 }],
   },
   {
     id: "beat_03",
     title: "Layer",
     line: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
     speak: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
-    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", atSec: 2.15 }],
+    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", atSec: 2.6 }],
   },
   {
     id: "beat_04",
@@ -116,8 +121,8 @@ const BRADLEY_SCRIPT = [
     line: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
-      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.05, slot: 2 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.05, slot: 8 },
+      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.15, slot: 2 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.25, slot: 8 },
     ],
   },
   {
@@ -126,9 +131,9 @@ const BRADLEY_SCRIPT = [
     line: "Comfort settles: climate adjusts, theater waits, and security watches.",
     speak: "Comfort settles: climate adjusts, theater waits, and security watches.",
     spawn: [
-      { id: "climate", label: "Climate", rgb: "121,227,143", atSec: 1.55 },
-      { id: "theater", label: "Theater", rgb: "245,200,94", atSec: 2.55 },
-      { id: "security", label: "Security", rgb: "194,140,255", atSec: 3.45 },
+      { id: "climate", label: "Climate", rgb: "121,227,143", atSec: 1.32 },
+      { id: "theater", label: "Theater", rgb: "245,200,94", atSec: 2.6 },
+      { id: "security", label: "Security", rgb: "194,140,255", atSec: 3.46 },
     ],
   },
   {
@@ -136,7 +141,7 @@ const BRADLEY_SCRIPT = [
     title: "Boardroom",
     line: "In the boardroom, presentations start before anyone reaches for a cable.",
     speak: "In the boardroom, presentations start before anyone reaches for a cable.",
-    spawn: [{ id: "boardroom", label: "Boardroom", rgb: "132,200,255", atSec: 0.5 }],
+    spawn: [{ id: "boardroom", label: "Boardroom", rgb: "132,200,255", atSec: 0.35 }],
   },
   {
     id: "beat_07",
@@ -144,8 +149,8 @@ const BRADLEY_SCRIPT = [
     line: "Cameras frame speakers, sound balances, notes appear where teams expect them.",
     speak: "Cameras frame speakers, sound balances, notes appear where teams expect them.",
     spawn: [
-      { id: "cameras", label: "Cameras", rgb: "85,240,216", atSec: 0.35 },
-      { id: "sound", label: "Sound", rgb: "158,224,195", atSec: 1.75 },
+      { id: "cameras", label: "Cameras", rgb: "85,240,216", atSec: 0.45 },
+      { id: "sound", label: "Sound", rgb: "158,224,195", atSec: 1.98 },
     ],
   },
   {
@@ -153,14 +158,14 @@ const BRADLEY_SCRIPT = [
     title: "Welcome",
     line: "At home, guests feel welcome without learning controls.",
     speak: "At home, guests feel welcome without learning controls.",
-    spawn: [{ id: "guests", label: "Guests", rgb: "255,227,95", atSec: 0.95 }],
+    spawn: [{ id: "guests", label: "Guests", rgb: "255,227,95", atSec: 1.0 }],
   },
   {
     id: "beat_09",
     title: "Time",
     line: "Staff regain time usually lost to setup rituals.",
     speak: "Staff regain time usually lost to setup rituals.",
-    spawn: [{ id: "time", label: "Time", rgb: "216,171,69", atSec: 1.15 }],
+    spawn: [{ id: "time", label: "Time", rgb: "216,171,69", atSec: 1.38 }],
   },
   {
     id: "beat_10",
@@ -211,6 +216,7 @@ let showRunning = false;
 let glowTimer = null;
 let currentAudio = null;
 let spawnTimers = [];
+let spawnRaf = 0;
 let phase1SlotIdx = 0;
 let orbitPhase = 0;
 let orbitPeriodCurrent = ORBIT_PERIOD_S;
@@ -227,6 +233,10 @@ function setVoiceStatus(text, isError = false) {
 function clearSpawnTimers() {
   spawnTimers.forEach((id) => window.clearTimeout(id));
   spawnTimers = [];
+  if (spawnRaf) {
+    cancelAnimationFrame(spawnRaf);
+    spawnRaf = 0;
+  }
 }
 
 function pauseCurrentAudio() {
@@ -323,9 +333,14 @@ function spawnPhase2Orbit(atoms = PHASE2_SPAWNS) {
 }
 
 function resolveSpawnSec(atom, audios, pauseMs, beat) {
-  if (Number.isFinite(atom.atSec)) return atom.atSec;
-  const totalSec = totalBeatDuration(audios, pauseMs, beat);
-  return Math.max(0.35, (atom.at ?? 0) * totalSec);
+  let sec;
+  if (Number.isFinite(atom.atSec)) {
+    sec = atom.atSec;
+  } else {
+    const totalSec = totalBeatDuration(audios, pauseMs, beat);
+    sec = Math.max(0.35, (atom.at ?? 0) * totalSec);
+  }
+  return sec + SPAWN_OUTPUT_LAG_SEC;
 }
 
 function createSpawnWatcher(spawnList, audios, pauseMs, beat) {
@@ -333,35 +348,67 @@ function createSpawnWatcher(spawnList, audios, pauseMs, beat) {
     .map((atom) => ({ ...atom, atSec: resolveSpawnSec(atom, audios, pauseMs, beat) }))
     .sort((a, b) => a.atSec - b.atSec);
 
+  const activeParts = new Map();
   const bindings = [];
+  let running = false;
 
-  const cleanup = () => {
-    bindings.forEach(([audio, fn]) => {
-      audio.removeEventListener("timeupdate", fn);
-      audio.removeEventListener("playing", fn);
-      audio.removeEventListener("seeked", fn);
-    });
-    bindings.length = 0;
-  };
-
-  const tick = (audio, partOffsetSec) => {
+  const tick = () => {
     if (!showRunning || !pending.length) return;
-    const t = partOffsetSec + (audio.currentTime || 0);
-    while (pending.length && t >= pending[0].atSec) {
-      spawnAtom(pending.shift());
+
+    for (const [audio, state] of activeParts) {
+      if (!audio || audio.paused || audio.ended) continue;
+      if ((audio.currentTime || 0) < 0.04) continue;
+
+      const t = state.partOffsetSec + audio.currentTime;
+      while (pending.length && t >= pending[0].atSec) {
+        spawnAtom(pending.shift());
+      }
+      if (!pending.length) break;
     }
   };
 
-  const attach = (audio, partOffsetSec) => {
-    const fn = () => tick(audio, partOffsetSec);
-    audio.addEventListener("timeupdate", fn);
-    audio.addEventListener("playing", fn);
-    audio.addEventListener("seeked", fn);
-    bindings.push([audio, fn]);
-    fn();
+  const loop = () => {
+    tick();
+    if (running && showRunning && pending.length) {
+      spawnRaf = requestAnimationFrame(loop);
+    } else {
+      spawnRaf = 0;
+    }
   };
 
-  return { attach, cleanup, pending };
+  const ensureLoop = () => {
+    if (!running || spawnRaf) return;
+    spawnRaf = requestAnimationFrame(loop);
+  };
+
+  const attach = (audio, partOffsetSec) => {
+    activeParts.set(audio, { partOffsetSec });
+    const wake = () => ensureLoop();
+    audio.addEventListener("playing", wake);
+    audio.addEventListener("timeupdate", wake);
+    bindings.push([audio, wake]);
+  };
+
+  const cleanup = () => {
+    running = false;
+    bindings.forEach(([audio, fn]) => {
+      audio.removeEventListener("playing", fn);
+      audio.removeEventListener("timeupdate", fn);
+    });
+    bindings.length = 0;
+    activeParts.clear();
+    if (spawnRaf) {
+      cancelAnimationFrame(spawnRaf);
+      spawnRaf = 0;
+    }
+  };
+
+  const start = () => {
+    running = true;
+    ensureLoop();
+  };
+
+  return { attach, cleanup, start, pending };
 }
 
 function scheduleSpawnCues(spawnList, durationSec) {
@@ -370,7 +417,7 @@ function scheduleSpawnCues(spawnList, durationSec) {
   const sorted = [...spawnList]
     .map((atom) => ({
       ...atom,
-      atSec: Number.isFinite(atom.atSec) ? atom.atSec : (atom.at ?? 0) * durationSec,
+      atSec: (Number.isFinite(atom.atSec) ? atom.atSec : (atom.at ?? 0) * durationSec) + SPAWN_OUTPUT_LAG_SEC,
     }))
     .sort((a, b) => a.atSec - b.atSec);
 
@@ -469,6 +516,7 @@ async function playBeatAudio(audios, beat) {
   const pauseMs = beat.partPauseMs ?? 0;
   const totalSec = totalBeatDuration(audios, pauseMs, beat);
   const spawnWatcher = createSpawnWatcher(beat.spawn, audios, pauseMs, beat);
+  spawnWatcher.start();
 
   startGlow();
 
@@ -779,11 +827,10 @@ function resetShow() {
 }
 
 async function preloadBradleyVoice() {
-  try {
-    const first = BRADLEY_SCRIPT[0];
-    await loadBakedParts(first);
-  } catch {
-    /* baked voice optional until show starts */
+  const results = await Promise.allSettled(BRADLEY_SCRIPT.map((beat) => loadBakedParts(beat)));
+  const loaded = results.filter((result) => result.status === "fulfilled").length;
+  if (loaded) {
+    setVoiceStatus(`Bradley ready · ${loaded} beats cached`);
   }
 }
 
