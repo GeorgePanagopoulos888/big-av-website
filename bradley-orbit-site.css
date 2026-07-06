@@ -123,6 +123,11 @@ body.site-mode .core img {
   pointer-events: none;
 }
 
+body.site-mode .site-stage-viz,
+body.site-mode .site-filament-viz {
+  display: none !important;
+}
+
 .site-stage-viz {
   position: absolute;
   inset: 0;
