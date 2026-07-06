@@ -68,7 +68,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "bradley-app-bulb-18";
+const BRADLEY_BUILD = "bradley-app-bulb-19";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -123,8 +123,8 @@ const BRADLEY_SCRIPT = [
     line: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
-      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.13, slot: 2 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.23, slot: 0 },
+      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: IS_TOUCH_DEVICE ? 1.12 : 2.02, slot: 2, lagSec: 0 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.15, slot: 0 },
     ],
   },
   {
@@ -206,8 +206,12 @@ const BRADLEY_SCRIPT = [
 const liveSystem = document.getElementById("live-system");
 const bradleyCore = document.getElementById("bradley-core");
 const bradleyBulbImg = document.getElementById("bradley-bulb-img");
+const stageVizCanvas = document.getElementById("stage-viz-canvas");
+const filamentCanvas = document.getElementById("filament-canvas");
 const coreWaveCanvas = document.getElementById("core-wave-canvas");
 const speechVizData = new Float32Array(1024);
+let stageVizCtx = null;
+let filamentCtx = null;
 let coreWaveCtx = null;
 let idleBulbRaf = 0;
 const liveAtoms = document.getElementById("live-atoms");
@@ -714,8 +718,40 @@ function updateSpeechViz() {
 
 function bulbBreathLevel(amp = 0, hot = false) {
   const breath = (Math.sin(Date.now() / 2100) + 1) / 2;
-  if (hot && amp > 0.04) return Math.min(1, 0.68 + breath * 0.18 + amp * 0.12);
+  if (hot) return Math.min(1, 0.68 + breath * 0.18 + amp * 0.12);
   return 0.07 + breath * 0.07;
+}
+
+function resizeStageVizCanvas() {
+  if (!stageVizCanvas || !liveSystem) return;
+  const rect = liveSystem.getBoundingClientRect();
+  const w = Math.max(280, Math.round(rect.width));
+  const h = Math.max(280, Math.round(rect.height));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pw = Math.round(w * dpr);
+  const ph = Math.round(h * dpr);
+  if (stageVizCanvas.width !== pw || stageVizCanvas.height !== ph) {
+    stageVizCanvas.width = pw;
+    stageVizCanvas.height = ph;
+    stageVizCtx = stageVizCanvas.getContext("2d");
+    if (stageVizCtx) stageVizCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+}
+
+function resizeFilamentCanvas() {
+  if (!filamentCanvas || !bradleyCore) return;
+  const rect = bradleyCore.getBoundingClientRect();
+  const size = Math.max(180, Math.round(rect.width * 0.78));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const px = Math.round(size * dpr);
+  if (filamentCanvas.width !== px || filamentCanvas.height !== px) {
+    filamentCanvas.width = px;
+    filamentCanvas.height = px;
+    filamentCtx = filamentCanvas.getContext("2d");
+    if (filamentCtx) filamentCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  filamentCanvas.style.width = `${size}px`;
+  filamentCanvas.style.height = `${size}px`;
 }
 
 function resizeCoreWaveCanvas() {
@@ -723,18 +759,135 @@ function resizeCoreWaveCanvas() {
   const rect = bradleyCore.getBoundingClientRect();
   const w = Math.max(220, Math.round(rect.width * 1.08));
   const h = Math.max(48, Math.round(rect.width * 0.2));
-  if (coreWaveCanvas.width !== w || coreWaveCanvas.height !== h) {
-    coreWaveCanvas.width = w;
-    coreWaveCanvas.height = h;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pw = Math.round(w * dpr);
+  const ph = Math.round(h * dpr);
+  if (coreWaveCanvas.width !== pw || coreWaveCanvas.height !== ph) {
+    coreWaveCanvas.width = pw;
+    coreWaveCanvas.height = ph;
     coreWaveCtx = coreWaveCanvas.getContext("2d");
+    if (coreWaveCtx) coreWaveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
+}
+
+function drawStageViz(b, hot) {
+  resizeStageVizCanvas();
+  if (!stageVizCanvas || !stageVizCtx || !liveSystem) return;
+  const w = liveSystem.clientWidth;
+  const h = liveSystem.clientHeight;
+  const cx = w / 2;
+  const cy = h / 2;
+  const t = Date.now() / 1000;
+  stageVizCtx.clearRect(0, 0, w, h);
+
+  const gr = stageVizCtx.createRadialGradient(cx, cy, w * 0.04, cx, cy, Math.max(w, h) * 0.72);
+  if (hot) {
+    gr.addColorStop(0, `rgba(255,176,72,${(0.5 * b).toFixed(3)})`);
+    gr.addColorStop(0.45, `rgba(255,150,52,${(0.14 * b).toFixed(3)})`);
+    gr.addColorStop(1, "rgba(255,150,52,0)");
+  } else {
+    gr.addColorStop(0, `rgba(214,176,80,${(0.16 * b + 0.05).toFixed(3)})`);
+    gr.addColorStop(0.5, `rgba(190,150,70,${(0.05 * b).toFixed(3)})`);
+    gr.addColorStop(1, "rgba(190,150,70,0)");
+  }
+  stageVizCtx.fillStyle = gr;
+  stageVizCtx.fillRect(0, 0, w, h);
+
+  const rings = [
+    { rx: 0.44, ry: 0.17, rot: -10, alpha: 0.2 },
+    { rx: 0.38, ry: 0.2, rot: 28, alpha: 0.16 },
+    { rx: 0.32, ry: 0.23, rot: 73, alpha: 0.14 },
+    { rx: 0.26, ry: 0.26, rot: 132, alpha: 0.1 },
+    { rx: 0.2, ry: 0.29, rot: 198, alpha: 0.08 },
+  ];
+  for (const ring of rings) {
+    stageVizCtx.save();
+    stageVizCtx.translate(cx, cy);
+    stageVizCtx.rotate((ring.rot * Math.PI) / 180);
+    stageVizCtx.beginPath();
+    stageVizCtx.ellipse(0, 0, w * ring.rx, h * ring.ry, 0, 0, Math.PI * 2);
+    stageVizCtx.strokeStyle = hot
+      ? `rgba(255,190,92,${(ring.alpha * (0.55 + b * 0.65)).toFixed(3)})`
+      : `rgba(132,200,255,${(ring.alpha * (0.45 + b * 0.4)).toFixed(3)})`;
+    stageVizCtx.lineWidth = 1;
+    stageVizCtx.setLineDash([5, 11]);
+    stageVizCtx.lineDashOffset = -t * 18;
+    stageVizCtx.stroke();
+    stageVizCtx.restore();
+  }
+
+  const dotCount = 36;
+  for (let i = 0; i < dotCount; i += 1) {
+    const ang = (i / dotCount) * Math.PI * 2 + t * 0.35;
+    const pulse = (Math.sin(t * 2.4 + i * 0.7) + 1) / 2;
+    const rad = w * (0.14 + (i % 5) * 0.045 + pulse * 0.02 * b);
+    const x = cx + Math.cos(ang) * rad;
+    const y = cy + Math.sin(ang) * rad * 0.42;
+    const dotR = 1 + pulse * (hot ? 1.6 : 0.9) * (0.35 + b * 0.65);
+    stageVizCtx.beginPath();
+    stageVizCtx.arc(x, y, dotR, 0, Math.PI * 2);
+    stageVizCtx.fillStyle = hot
+      ? `rgba(255,200,110,${(0.18 + b * 0.42).toFixed(3)})`
+      : `rgba(143,192,255,${(0.12 + b * 0.28).toFixed(3)})`;
+    stageVizCtx.fill();
+  }
+}
+
+function drawFilamentGlow(b, hot) {
+  resizeFilamentCanvas();
+  if (!filamentCanvas || !filamentCtx) return;
+  const size = filamentCanvas.clientWidth || filamentCanvas.width;
+  const cx = size / 2;
+  const cy = size / 2;
+  const R = size * 0.36;
+  filamentCtx.clearRect(0, 0, size, size);
+
+  const fy = cy + R * 0.74;
+  const topY = cy - R * 0.5;
+  const loops = 5;
+  const span = R * 0.82;
+  const x0 = cx - span / 2;
+  const step = span / loops;
+
+  filamentCtx.lineWidth = Math.max(1.6, R * 0.035);
+  filamentCtx.lineCap = "round";
+  filamentCtx.strokeStyle =
+    b > 0.25
+      ? `rgba(255,${150 + 90 * b | 0},${40 + 60 * b | 0},${Math.min(1, 0.55 + b).toFixed(2)})`
+      : "rgba(120,95,55,.5)";
+  if (b > 0.4) {
+    filamentCtx.shadowColor = `rgba(255,170,60,${b.toFixed(2)})`;
+    filamentCtx.shadowBlur = R * 0.35;
+  }
+  filamentCtx.beginPath();
+  filamentCtx.moveTo(x0 - R * 0.06, fy);
+  filamentCtx.lineTo(x0, fy);
+  for (let i = 0; i < loops; i += 1) {
+    const x = x0 + i * step;
+    filamentCtx.lineTo(x, fy);
+    filamentCtx.lineTo(x + step / 2, topY);
+    filamentCtx.lineTo(x + step, fy);
+  }
+  filamentCtx.lineTo(cx + span / 2 + R * 0.06, fy);
+  filamentCtx.stroke();
+  filamentCtx.shadowBlur = 0;
+
+  if (hot && b > 0.35) {
+    const glow = filamentCtx.createRadialGradient(cx, cy + R * 0.1, 0, cx, cy + R * 0.1, R * 0.55);
+    glow.addColorStop(0, `rgba(255,188,88,${(0.22 * b).toFixed(3)})`);
+    glow.addColorStop(1, "rgba(255,188,88,0)");
+    filamentCtx.fillStyle = glow;
+    filamentCtx.fillRect(0, 0, size, size);
+  }
+
+  filamentCanvas.style.opacity = String(Math.min(1, 0.42 + b * 0.58));
 }
 
 function drawCoreWaves(data, gain, hot) {
   resizeCoreWaveCanvas();
   if (!coreWaveCanvas || !coreWaveCtx) return;
-  const w = coreWaveCanvas.width;
-  const h = coreWaveCanvas.height;
+  const w = coreWaveCanvas.clientWidth || coreWaveCanvas.width;
+  const h = coreWaveCanvas.clientHeight || coreWaveCanvas.height;
   coreWaveCtx.clearRect(0, 0, w, h);
   if (!data || gain <= 0) {
     coreWaveCanvas.style.opacity = "0";
@@ -772,12 +925,15 @@ function applyBradleyBulbLook(b, hot, waveData, gain = 0) {
   }
   liveSystem?.style.setProperty("--bulb-b", b.toFixed(3));
   liveSystem?.style.setProperty("--bulb-hot", hot ? "1" : "0");
+  drawStageViz(b, hot);
+  drawFilamentGlow(b, hot);
   drawCoreWaves(waveData, gain, hot);
 }
 
 function applyVoiceAmp(amp) {
   const value = amp.toFixed(3);
-  const hot = document.body.classList.contains("bradley-speaking") && amp > 0.04;
+  const speaking = document.body.classList.contains("bradley-speaking");
+  const hot = speaking;
   const b = bulbBreathLevel(amp, hot);
   const waveData = hot ? updateSpeechViz() : null;
   const gain = hot ? 2.7 : 0;
@@ -795,7 +951,8 @@ function startGlow() {
   glowSmooth = 0;
 
   const loop = () => {
-    const amp = bradleyAnalyser && currentAudio && !currentAudio.paused ? readVoiceAmplitude() : glowSmooth * 0.9;
+    const amp =
+      currentAudio && !currentAudio.paused ? readVoiceAmplitude() : glowSmooth * 0.9;
     applyVoiceAmp(amp);
     glowRaf = requestAnimationFrame(loop);
   };
@@ -1073,6 +1230,11 @@ async function wireBookingsCta() {
 
 wireBookingsCta();
 setVoiceStatus("Live demo");
-resizeCoreWaveCanvas();
+function resizeBradleyViz() {
+  resizeStageVizCanvas();
+  resizeFilamentCanvas();
+  resizeCoreWaveCanvas();
+}
+resizeBradleyViz();
 startIdleBulbBreath();
-window.addEventListener("resize", resizeCoreWaveCanvas);
+window.addEventListener("resize", resizeBradleyViz);
