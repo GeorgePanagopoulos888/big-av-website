@@ -64,7 +64,7 @@ const PHASE2_SPAWNS = [
   { id: "approvals", label: "Approvals", rgb: "194,140,255" },
 ];
 
-const BRADLEY_BUILD = "playback-anchored-spawns-8";
+const BRADLEY_BUILD = "audio-clock-spawns-9";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -101,14 +101,14 @@ const BRADLEY_SCRIPT = [
     title: "Friction",
     line: "No more app-hunting, wall tapping, or guessing which screen rules what.",
     speak: "No more app-hunting, wall tapping, or guessing which screen rules what.",
-    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", at: 0.2 }],
+    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 0.85 }],
   },
   {
     id: "beat_03",
     title: "Layer",
     line: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
     speak: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
-    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", at: 0.1 }],
+    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", atSec: 2.15 }],
   },
   {
     id: "beat_04",
@@ -116,8 +116,8 @@ const BRADLEY_SCRIPT = [
     line: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
-      { id: "coffee", label: "Coffee", rgb: "255,191,105", at: 0.28, slot: 2 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", at: 0.46, slot: 8 },
+      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.05, slot: 2 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.05, slot: 8 },
     ],
   },
   {
@@ -126,9 +126,9 @@ const BRADLEY_SCRIPT = [
     line: "Comfort settles: climate adjusts, theater waits, and security watches.",
     speak: "Comfort settles: climate adjusts, theater waits, and security watches.",
     spawn: [
-      { id: "climate", label: "Climate", rgb: "121,227,143", at: 0.0 },
-      { id: "theater", label: "Theater", rgb: "245,200,94", at: 0.52 },
-      { id: "security", label: "Security", rgb: "194,140,255", at: 0.78 },
+      { id: "climate", label: "Climate", rgb: "121,227,143", atSec: 1.55 },
+      { id: "theater", label: "Theater", rgb: "245,200,94", atSec: 2.55 },
+      { id: "security", label: "Security", rgb: "194,140,255", atSec: 3.45 },
     ],
   },
   {
@@ -136,7 +136,7 @@ const BRADLEY_SCRIPT = [
     title: "Boardroom",
     line: "In the boardroom, presentations start before anyone reaches for a cable.",
     speak: "In the boardroom, presentations start before anyone reaches for a cable.",
-    spawn: [{ id: "boardroom", label: "Boardroom", rgb: "132,200,255", at: 0.18 }],
+    spawn: [{ id: "boardroom", label: "Boardroom", rgb: "132,200,255", atSec: 0.5 }],
   },
   {
     id: "beat_07",
@@ -144,8 +144,8 @@ const BRADLEY_SCRIPT = [
     line: "Cameras frame speakers, sound balances, notes appear where teams expect them.",
     speak: "Cameras frame speakers, sound balances, notes appear where teams expect them.",
     spawn: [
-      { id: "cameras", label: "Cameras", rgb: "85,240,216", at: 0.16 },
-      { id: "sound", label: "Sound", rgb: "158,224,195", at: 0.32 },
+      { id: "cameras", label: "Cameras", rgb: "85,240,216", atSec: 0.35 },
+      { id: "sound", label: "Sound", rgb: "158,224,195", atSec: 1.75 },
     ],
   },
   {
@@ -153,14 +153,14 @@ const BRADLEY_SCRIPT = [
     title: "Welcome",
     line: "At home, guests feel welcome without learning controls.",
     speak: "At home, guests feel welcome without learning controls.",
-    spawn: [{ id: "guests", label: "Guests", rgb: "255,227,95", at: 0.38 }],
+    spawn: [{ id: "guests", label: "Guests", rgb: "255,227,95", atSec: 0.95 }],
   },
   {
     id: "beat_09",
     title: "Time",
     line: "Staff regain time usually lost to setup rituals.",
     speak: "Staff regain time usually lost to setup rituals.",
-    spawn: [{ id: "time", label: "Time", rgb: "216,171,69", at: 0.24 }],
+    spawn: [{ id: "time", label: "Time", rgb: "216,171,69", atSec: 1.15 }],
   },
   {
     id: "beat_10",
@@ -322,17 +322,60 @@ function spawnPhase2Orbit(atoms = PHASE2_SPAWNS) {
   });
 }
 
+function resolveSpawnSec(atom, audios, pauseMs, beat) {
+  if (Number.isFinite(atom.atSec)) return atom.atSec;
+  const totalSec = totalBeatDuration(audios, pauseMs, beat);
+  return Math.max(0.35, (atom.at ?? 0) * totalSec);
+}
+
+function createSpawnWatcher(spawnList, audios, pauseMs, beat) {
+  const pending = [...(spawnList || [])]
+    .map((atom) => ({ ...atom, atSec: resolveSpawnSec(atom, audios, pauseMs, beat) }))
+    .sort((a, b) => a.atSec - b.atSec);
+
+  const bindings = [];
+
+  const cleanup = () => {
+    bindings.forEach(([audio, fn]) => {
+      audio.removeEventListener("timeupdate", fn);
+      audio.removeEventListener("playing", fn);
+      audio.removeEventListener("seeked", fn);
+    });
+    bindings.length = 0;
+  };
+
+  const tick = (audio, partOffsetSec) => {
+    if (!showRunning || !pending.length) return;
+    const t = partOffsetSec + (audio.currentTime || 0);
+    while (pending.length && t >= pending[0].atSec) {
+      spawnAtom(pending.shift());
+    }
+  };
+
+  const attach = (audio, partOffsetSec) => {
+    const fn = () => tick(audio, partOffsetSec);
+    audio.addEventListener("timeupdate", fn);
+    audio.addEventListener("playing", fn);
+    audio.addEventListener("seeked", fn);
+    bindings.push([audio, fn]);
+    fn();
+  };
+
+  return { attach, cleanup, pending };
+}
+
 function scheduleSpawnCues(spawnList, durationSec) {
   if (!spawnList?.length || !durationSec) return;
 
-  const sorted = [...spawnList].sort((a, b) => (a.at ?? 0) - (b.at ?? 0));
-  let lastDelayMs = 0;
+  const sorted = [...spawnList]
+    .map((atom) => ({
+      ...atom,
+      atSec: Number.isFinite(atom.atSec) ? atom.atSec : (atom.at ?? 0) * durationSec,
+    }))
+    .sort((a, b) => a.atSec - b.atSec);
 
   sorted.forEach((atom) => {
-    let delayMs = Math.max(0, (atom.at ?? 0) * durationSec * 1000);
-    delayMs = Math.max(delayMs, lastDelayMs + 420);
-    lastDelayMs = delayMs;
-
+    const delayMs = Math.max(0, atom.atSec * 1000);
     const timer = window.setTimeout(() => {
       if (showRunning) spawnAtom(atom);
     }, delayMs);
@@ -362,16 +405,9 @@ function waitAudioMeta(audio) {
   });
 }
 
-async function playAudioOnly(audio, { onStart } = {}) {
+async function playAudioOnly(audio) {
   pauseCurrentAudio();
   currentAudio = audio;
-  let started = false;
-
-  const fireStart = () => {
-    if (started) return;
-    started = true;
-    onStart?.();
-  };
 
   const tryPlay = () =>
     new Promise((resolve, reject) => {
@@ -383,10 +419,7 @@ async function playAudioOnly(audio, { onStart } = {}) {
         currentAudio = null;
         reject(new Error("playback failed"));
       };
-      audio
-        .play()
-        .then(fireStart)
-        .catch(reject);
+      audio.play().catch(reject);
     });
 
   try {
@@ -435,41 +468,38 @@ async function playBeatAudio(audios, beat) {
   clearSpawnTimers();
   const pauseMs = beat.partPauseMs ?? 0;
   const totalSec = totalBeatDuration(audios, pauseMs, beat);
+  const spawnWatcher = createSpawnWatcher(beat.spawn, audios, pauseMs, beat);
 
   startGlow();
 
   let orbitSwapPromise = null;
   let orbitSwapTimer = null;
-  let playbackAnchored = false;
-
-  const anchorPlayback = () => {
-    if (playbackAnchored) return;
-    playbackAnchored = true;
-
-    if (beat.spawn?.length) scheduleSpawnCues(beat.spawn, totalSec);
-
-    if (Number.isFinite(beat.orbitSwapAt)) {
-      const maxMs = Math.max(0, totalSec * 1000 - 100);
-      const delayMs = Math.min(beat.orbitSwapAt * 1000, maxMs);
-      orbitSwapTimer = window.setTimeout(fireOrbitSwap, delayMs);
-      spawnTimers.push(orbitSwapTimer);
-    }
-  };
+  let partOffsetSec = 0;
 
   const fireOrbitSwap = () => {
     if (!showRunning || orbitSwapPromise) return;
     orbitSwapPromise = runOrbitSwap(beat);
   };
 
+  if (Number.isFinite(beat.orbitSwapAt)) {
+    const maxMs = Math.max(0, totalSec * 1000 - 100);
+    const delayMs = Math.min(beat.orbitSwapAt * 1000, maxMs);
+    orbitSwapTimer = window.setTimeout(fireOrbitSwap, delayMs);
+    spawnTimers.push(orbitSwapTimer);
+  }
+
   for (let i = 0; i < audios.length; i += 1) {
-    if (i > 0 && pauseMs) await new Promise((r) => setTimeout(r, pauseMs));
+    if (i > 0 && pauseMs) {
+      await new Promise((r) => setTimeout(r, pauseMs));
+      partOffsetSec += pauseMs / 1000;
+    }
     if (!showRunning) break;
 
     const shouldSwapOnPart = beat.orbitSwapOnPart === i || beat.orbitResetOnPart === i;
-    const onStart = i === 0 ? anchorPlayback : undefined;
+    spawnWatcher.attach(audios[i], partOffsetSec);
 
     if (shouldSwapOnPart) {
-      const audioDone = playAudioOnly(audios[i], { onStart });
+      const audioDone = playAudioOnly(audios[i]);
       const delayMs = Math.max(0, beat.orbitSwapDelayMs ?? 0);
 
       if (delayMs) {
@@ -480,12 +510,15 @@ async function playBeatAudio(audios, beat) {
       }
 
       await audioDone;
+      partOffsetSec += audios[i].duration || 0;
       continue;
     }
 
-    await playAudioOnly(audios[i], { onStart });
+    await playAudioOnly(audios[i]);
+    partOffsetSec += audios[i].duration || 0;
   }
 
+  spawnWatcher.cleanup();
   if (orbitSwapTimer) window.clearTimeout(orbitSwapTimer);
   if (orbitSwapPromise) await orbitSwapPromise;
 }
