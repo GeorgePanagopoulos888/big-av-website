@@ -403,18 +403,6 @@ body.bradley-speaking .live-caption:not([hidden]) {
   mix-blend-mode: screen;
 }
 
-.core-wave-canvas {
-  position: absolute;
-  left: 50%;
-  top: 76%;
-  width: min(108%, 640px);
-  height: 22%;
-  transform: translate(-50%, -50%);
-  z-index: 5;
-  pointer-events: none;
-  opacity: 0;
-}
-
 .core img,
 #bradley-bulb-img {
   position: relative;
@@ -1496,10 +1484,8 @@ li {
   }
 
   .core img,
-  .core-wave-canvas,
   .filament-canvas,
   .stage-viz-canvas,
-  .core img,
   #bradley-bulb-img {
     animation: none;
     transition: none;

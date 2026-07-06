@@ -68,7 +68,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "bradley-app-bulb-19";
+const BRADLEY_BUILD = "bradley-app-bulb-20";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -108,14 +108,14 @@ const BRADLEY_SCRIPT = [
     title: "Friction",
     line: "No more app-hunting, wall tapping, or guessing which screen rules what.",
     speak: "No more app-hunting, wall tapping, or guessing which screen rules what.",
-    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 1.4 }],
+    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 1.52, lagSec: 0 }],
   },
   {
     id: "beat_03",
     title: "Layer",
     line: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
     speak: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
-    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", atSec: 2.58 }],
+    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", atSec: 2.02, lagSec: 0 }],
   },
   {
     id: "beat_04",
@@ -123,8 +123,8 @@ const BRADLEY_SCRIPT = [
     line: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
-      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: IS_TOUCH_DEVICE ? 1.12 : 2.02, slot: 2, lagSec: 0 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.15, slot: 0 },
+      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.0, slot: 2, lagSec: 0 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.1, slot: 0, lagSec: 0 },
     ],
   },
   {
@@ -208,11 +208,9 @@ const bradleyCore = document.getElementById("bradley-core");
 const bradleyBulbImg = document.getElementById("bradley-bulb-img");
 const stageVizCanvas = document.getElementById("stage-viz-canvas");
 const filamentCanvas = document.getElementById("filament-canvas");
-const coreWaveCanvas = document.getElementById("core-wave-canvas");
 const speechVizData = new Float32Array(1024);
 let stageVizCtx = null;
 let filamentCtx = null;
-let coreWaveCtx = null;
 let idleBulbRaf = 0;
 const liveAtoms = document.getElementById("live-atoms");
 const bradleyLine = document.getElementById("bradley-line");
@@ -373,9 +371,14 @@ function createSpawnWatcher(spawnList, audios, pauseMs, beat) {
 
     for (const [audio, state] of activeParts) {
       if (!audio || audio.paused || audio.ended) continue;
-      if ((audio.currentTime || 0) < 0.04) continue;
 
-      const t = state.partOffsetSec + audio.currentTime;
+      let t;
+      if (IS_TOUCH_DEVICE && state.playStartWall) {
+        t = state.partOffsetSec + (performance.now() - state.playStartWall) / 1000;
+      } else {
+        if ((audio.currentTime || 0) < 0.04) continue;
+        t = state.partOffsetSec + audio.currentTime;
+      }
       while (pending.length && t >= pending[0].atSec) {
         spawnAtom(pending.shift());
       }
@@ -398,8 +401,12 @@ function createSpawnWatcher(spawnList, audios, pauseMs, beat) {
   };
 
   const attach = (audio, partOffsetSec) => {
-    activeParts.set(audio, { partOffsetSec });
-    const wake = () => ensureLoop();
+    const state = { partOffsetSec, playStartWall: 0 };
+    activeParts.set(audio, state);
+    const wake = () => {
+      if (!state.playStartWall) state.playStartWall = performance.now();
+      ensureLoop();
+    };
     audio.addEventListener("playing", wake);
     audio.addEventListener("timeupdate", wake);
     bindings.push([audio, wake]);
@@ -754,82 +761,109 @@ function resizeFilamentCanvas() {
   filamentCanvas.style.height = `${size}px`;
 }
 
-function resizeCoreWaveCanvas() {
-  if (!coreWaveCanvas || !bradleyCore) return;
-  const rect = bradleyCore.getBoundingClientRect();
-  const w = Math.max(220, Math.round(rect.width * 1.08));
-  const h = Math.max(48, Math.round(rect.width * 0.2));
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const pw = Math.round(w * dpr);
-  const ph = Math.round(h * dpr);
-  if (coreWaveCanvas.width !== pw || coreWaveCanvas.height !== ph) {
-    coreWaveCanvas.width = pw;
-    coreWaveCanvas.height = ph;
-    coreWaveCtx = coreWaveCanvas.getContext("2d");
-    if (coreWaveCtx) coreWaveCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
+function bradleyCoreCenter() {
+  if (!bradleyCore || !liveSystem) return { x: 0, y: 0 };
+  const stage = liveSystem.getBoundingClientRect();
+  const core = bradleyCore.getBoundingClientRect();
+  return {
+    x: core.left - stage.left + core.width / 2,
+    y: core.top - stage.top + core.height / 2,
+  };
 }
 
-function drawStageViz(b, hot) {
-  resizeStageVizCanvas();
-  if (!stageVizCanvas || !stageVizCtx || !liveSystem) return;
-  const w = liveSystem.clientWidth;
-  const h = liveSystem.clientHeight;
-  const cx = w / 2;
-  const cy = h / 2;
-  const t = Date.now() / 1000;
-  stageVizCtx.clearRect(0, 0, w, h);
-
-  const gr = stageVizCtx.createRadialGradient(cx, cy, w * 0.04, cx, cy, Math.max(w, h) * 0.72);
+function drawBradleyStageGlow(cx, cy, stageW, stageH, b, hot) {
+  if (!stageVizCtx) return;
+  const R = Math.min(stageW, stageH) * 0.165;
+  const gr = stageVizCtx.createRadialGradient(cx, cy, R * 0.3, cx, cy, Math.max(stageW, stageH) * 0.95);
   if (hot) {
-    gr.addColorStop(0, `rgba(255,176,72,${(0.5 * b).toFixed(3)})`);
-    gr.addColorStop(0.45, `rgba(255,150,52,${(0.14 * b).toFixed(3)})`);
+    gr.addColorStop(0, `rgba(255,176,72,${0.5 * b})`);
+    gr.addColorStop(0.45, `rgba(255,150,52,${0.14 * b})`);
     gr.addColorStop(1, "rgba(255,150,52,0)");
   } else {
-    gr.addColorStop(0, `rgba(214,176,80,${(0.16 * b + 0.05).toFixed(3)})`);
-    gr.addColorStop(0.5, `rgba(190,150,70,${(0.05 * b).toFixed(3)})`);
+    gr.addColorStop(0, `rgba(214,176,80,${0.16 * b + 0.05})`);
+    gr.addColorStop(0.5, `rgba(190,150,70,${0.05 * b})`);
     gr.addColorStop(1, "rgba(190,150,70,0)");
   }
   stageVizCtx.fillStyle = gr;
-  stageVizCtx.fillRect(0, 0, w, h);
+  stageVizCtx.fillRect(0, 0, stageW, stageH);
+}
 
-  const rings = [
-    { rx: 0.44, ry: 0.17, rot: -10, alpha: 0.2 },
-    { rx: 0.38, ry: 0.2, rot: 28, alpha: 0.16 },
-    { rx: 0.32, ry: 0.23, rot: 73, alpha: 0.14 },
-    { rx: 0.26, ry: 0.26, rot: 132, alpha: 0.1 },
-    { rx: 0.2, ry: 0.29, rot: 198, alpha: 0.08 },
-  ];
-  for (const ring of rings) {
-    stageVizCtx.save();
-    stageVizCtx.translate(cx, cy);
-    stageVizCtx.rotate((ring.rot * Math.PI) / 180);
-    stageVizCtx.beginPath();
-    stageVizCtx.ellipse(0, 0, w * ring.rx, h * ring.ry, 0, 0, Math.PI * 2);
-    stageVizCtx.strokeStyle = hot
-      ? `rgba(255,190,92,${(ring.alpha * (0.55 + b * 0.65)).toFixed(3)})`
-      : `rgba(132,200,255,${(ring.alpha * (0.45 + b * 0.4)).toFixed(3)})`;
-    stageVizCtx.lineWidth = 1;
-    stageVizCtx.setLineDash([5, 11]);
-    stageVizCtx.lineDashOffset = -t * 18;
-    stageVizCtx.stroke();
-    stageVizCtx.restore();
+function drawBradleyVoiceWaves(cx, cy, hot, ampBase, layer = "all") {
+  if (!stageVizCtx || ampBase <= 0) return;
+  const t = performance.now() / 420;
+  const color = hot ? "255,190,92" : "132,200,255";
+  const scale = Math.min(1.15, (liveSystem?.clientWidth || 720) / 720);
+
+  if (layer === "all" || layer === "outer") {
+    for (let band = 0; band < 3; band += 1) {
+      const radius = (150 + band * 34 + Math.sin(t + band) * 6) * scale;
+      const amp = (18 + band * 7) * ampBase;
+      stageVizCtx.beginPath();
+      for (let i = 0; i <= 220; i += 1) {
+        const a = (Math.PI * 2 * i) / 220;
+        const wobble = Math.sin(a * 5 + t * 1.8 + band) * amp + Math.sin(a * 11 - t * 0.9) * amp * 0.38;
+        const rx = radius + wobble;
+        const ry = radius * 0.58 + wobble * 0.45;
+        const x = cx + Math.cos(a) * rx;
+        const y = cy + Math.sin(a) * ry;
+        if (i === 0) stageVizCtx.moveTo(x, y);
+        else stageVizCtx.lineTo(x, y);
+      }
+      stageVizCtx.closePath();
+      stageVizCtx.strokeStyle = `rgba(${color},${0.26 - band * 0.055})`;
+      stageVizCtx.lineWidth = 1.4;
+      stageVizCtx.shadowColor = `rgba(${color},0.38)`;
+      stageVizCtx.shadowBlur = 16;
+      stageVizCtx.stroke();
+    }
   }
 
-  const dotCount = 36;
-  for (let i = 0; i < dotCount; i += 1) {
-    const ang = (i / dotCount) * Math.PI * 2 + t * 0.35;
-    const pulse = (Math.sin(t * 2.4 + i * 0.7) + 1) / 2;
-    const rad = w * (0.14 + (i % 5) * 0.045 + pulse * 0.02 * b);
-    const x = cx + Math.cos(ang) * rad;
-    const y = cy + Math.sin(ang) * rad * 0.42;
-    const dotR = 1 + pulse * (hot ? 1.6 : 0.9) * (0.35 + b * 0.65);
+  if (layer === "all" || layer === "inner") {
+    for (let band = 0; band < 2; band += 1) {
+      const radius = (70 + band * 18 + Math.sin(t * 1.7 + band) * 5) * scale;
+      stageVizCtx.beginPath();
+      for (let i = 0; i <= 120; i += 1) {
+        const a = (Math.PI * 2 * i) / 120;
+        const wobble = Math.sin(a * 7 + t * 3 + band) * 10 * ampBase;
+        const x = cx + Math.cos(a) * (radius + wobble);
+        const y = cy + Math.sin(a) * (radius * 0.72 + wobble * 0.35);
+        if (i === 0) stageVizCtx.moveTo(x, y);
+        else stageVizCtx.lineTo(x, y);
+      }
+      stageVizCtx.closePath();
+      stageVizCtx.strokeStyle = `rgba(${color},${0.34 - band * 0.1})`;
+      stageVizCtx.lineWidth = 1.2;
+      stageVizCtx.shadowColor = `rgba(${color},0.52)`;
+      stageVizCtx.shadowBlur = 20;
+      stageVizCtx.stroke();
+    }
+  }
+  stageVizCtx.shadowBlur = 0;
+}
+
+function drawBradleyStage(b, hot) {
+  resizeStageVizCanvas();
+  if (!stageVizCanvas || !stageVizCtx || !liveSystem) return;
+  const stageW = liveSystem.clientWidth;
+  const stageH = liveSystem.clientHeight;
+  const { x: cx, y: cy } = bradleyCoreCenter();
+  const ampBase = hot ? 0.16 + b * 0.08 : 0.06 + b * 0.1;
+  stageVizCtx.clearRect(0, 0, stageW, stageH);
+  drawBradleyStageGlow(cx, cy, stageW, stageH, b, hot);
+
+  if (bradleyCore && ampBase > 0) {
+    const coreRect = bradleyCore.getBoundingClientRect();
+    const cutR = Math.max(coreRect.width, coreRect.height) * 0.34;
+    stageVizCtx.save();
     stageVizCtx.beginPath();
-    stageVizCtx.arc(x, y, dotR, 0, Math.PI * 2);
-    stageVizCtx.fillStyle = hot
-      ? `rgba(255,200,110,${(0.18 + b * 0.42).toFixed(3)})`
-      : `rgba(143,192,255,${(0.12 + b * 0.28).toFixed(3)})`;
-    stageVizCtx.fill();
+    stageVizCtx.rect(0, 0, stageW, stageH);
+    stageVizCtx.arc(cx, cy, cutR, 0, Math.PI * 2, true);
+    stageVizCtx.clip("evenodd");
+    drawBradleyVoiceWaves(cx, cy, hot, ampBase, "outer");
+    stageVizCtx.restore();
+    drawBradleyVoiceWaves(cx, cy, hot, ampBase, "inner");
+  } else if (ampBase > 0) {
+    drawBradleyVoiceWaves(cx, cy, hot, ampBase, "all");
   }
 }
 
@@ -883,51 +917,15 @@ function drawFilamentGlow(b, hot) {
   filamentCanvas.style.opacity = String(Math.min(1, 0.42 + b * 0.58));
 }
 
-function drawCoreWaves(data, gain, hot) {
-  resizeCoreWaveCanvas();
-  if (!coreWaveCanvas || !coreWaveCtx) return;
-  const w = coreWaveCanvas.clientWidth || coreWaveCanvas.width;
-  const h = coreWaveCanvas.clientHeight || coreWaveCanvas.height;
-  coreWaveCtx.clearRect(0, 0, w, h);
-  if (!data || gain <= 0) {
-    coreWaveCanvas.style.opacity = "0";
-    return;
-  }
-  const yb = h * 0.5;
-  const waveAmp = Math.min(h * 0.42, 40);
-  for (const dir of [1, -1]) {
-    coreWaveCtx.beginPath();
-    for (let x = 0; x <= w; x += 3) {
-      const i = Math.floor((x / Math.max(1, w)) * data.length);
-      const v = (data[i] || 0) * gain * dir;
-      const y = yb + v * waveAmp;
-      if (x === 0) coreWaveCtx.moveTo(x, y);
-      else coreWaveCtx.lineTo(x, y);
-    }
-    coreWaveCtx.strokeStyle = hot ? "rgba(255,190,92,.85)" : "rgba(143,192,255,.8)";
-    coreWaveCtx.lineWidth = 2;
-    coreWaveCtx.lineCap = "round";
-    coreWaveCtx.stroke();
-  }
-  coreWaveCtx.strokeStyle = hot ? "rgba(255,190,92,.1)" : "rgba(143,192,255,.08)";
-  coreWaveCtx.lineWidth = 1;
-  coreWaveCtx.beginPath();
-  coreWaveCtx.moveTo(0, yb);
-  coreWaveCtx.lineTo(w, yb);
-  coreWaveCtx.stroke();
-  coreWaveCanvas.style.opacity = String(Math.min(1, 0.42 + gain * 0.12));
-}
-
-function applyBradleyBulbLook(b, hot, waveData, gain = 0) {
+function applyBradleyBulbLook(b, hot) {
   const img = bradleyBulbImg || bradleyCore?.querySelector("img");
   if (img) {
     img.style.filter = `drop-shadow(0 0 ${(14 + b * 48).toFixed(0)}px rgba(255,176,72,${(0.3 + b * 0.5).toFixed(2)})) brightness(${(0.92 + b * 0.45).toFixed(2)})`;
   }
   liveSystem?.style.setProperty("--bulb-b", b.toFixed(3));
   liveSystem?.style.setProperty("--bulb-hot", hot ? "1" : "0");
-  drawStageViz(b, hot);
+  drawBradleyStage(b, hot);
   drawFilamentGlow(b, hot);
-  drawCoreWaves(waveData, gain, hot);
 }
 
 function applyVoiceAmp(amp) {
@@ -935,9 +933,7 @@ function applyVoiceAmp(amp) {
   const speaking = document.body.classList.contains("bradley-speaking");
   const hot = speaking;
   const b = bulbBreathLevel(amp, hot);
-  const waveData = hot ? updateSpeechViz() : null;
-  const gain = hot ? 2.7 : 0;
-  applyBradleyBulbLook(b, hot, waveData, gain);
+  applyBradleyBulbLook(b, hot);
   bradleyCore?.style.setProperty("--voice-amp", value);
   liveSystem?.style.setProperty("--voice-amp", value);
   liveAtoms?.querySelectorAll(".live-node").forEach((node) => {
@@ -966,7 +962,7 @@ function stopGlow() {
   if (glowRaf) cancelAnimationFrame(glowRaf);
   glowRaf = 0;
   glowSmooth = 0;
-  applyBradleyBulbLook(bulbBreathLevel(0, false), false, null, 0);
+  applyBradleyBulbLook(bulbBreathLevel(0, false), false);
   applyVoiceAmp(0);
   startIdleBulbBreath();
 }
@@ -975,7 +971,8 @@ function startIdleBulbBreath() {
   if (idleBulbRaf) cancelAnimationFrame(idleBulbRaf);
   const loop = () => {
     if (!document.body.classList.contains("bradley-speaking")) {
-      applyBradleyBulbLook(bulbBreathLevel(0, false), false, null, 0);
+      const b = bulbBreathLevel(0, false);
+      applyBradleyBulbLook(b, false);
     }
     idleBulbRaf = requestAnimationFrame(loop);
   };
@@ -1233,7 +1230,6 @@ setVoiceStatus("Live demo");
 function resizeBradleyViz() {
   resizeStageVizCanvas();
   resizeFilamentCanvas();
-  resizeCoreWaveCanvas();
 }
 resizeBradleyViz();
 startIdleBulbBreath();
