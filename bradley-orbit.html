@@ -1884,6 +1884,9 @@ function qwiok(){
 }
 function center(el){const s=surface.getBoundingClientRect(), r=el.getBoundingClientRect(); return{x:r.left-s.left+r.width/2,y:r.top-s.top+r.height/2}}
 function isSiteMode(){return document.body.classList.contains("site-mode")}
+function siteLightweightVoice(){
+  return isSiteMode()&&window.matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)").matches;
+}
 function siteWaveBox(){
   const root=surface.getBoundingClientRect();
   const target=isSiteMode()?system:surface;
@@ -1944,6 +1947,14 @@ function placeNodes(now){
   requestAnimationFrame(placeNodes);
 }
 function resizeWaveCanvas(){
+  if(siteLightweightVoice()){
+    waveCanvas.width=1;
+    waveCanvas.height=1;
+    waveCanvas.style.width="1px";
+    waveCanvas.style.height="1px";
+    waveCanvas.style.opacity="0";
+    return;
+  }
   const r=siteWaveBox();
   waveDpr=Math.min(2,window.devicePixelRatio||1);
   waveCanvas.width=Math.max(1,Math.floor(r.width*waveDpr));
@@ -1957,6 +1968,10 @@ function resizeWaveCanvas(){
   waveCtx.setTransform(waveDpr,0,0,waveDpr,0,0);
 }
 function drawVoiceWaves(){
+  if(siteLightweightVoice()){
+    setCoreAmp(speakAmp||0);
+    return;
+  }
   const w=waveCanvas.clientWidth||surface.clientWidth, h=waveCanvas.clientHeight||surface.clientHeight;
   if(!w||!h) return;
   waveCtx.clearRect(0,0,w,h);

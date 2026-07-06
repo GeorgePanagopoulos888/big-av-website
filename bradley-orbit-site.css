@@ -477,6 +477,11 @@ body.site-mode.show-running #dispatchOrbit .node {
     border-radius: 46px;
   }
 
+  body.site-mode .voice-waves,
+  body.site-mode .site-stage-viz {
+    display: none !important;
+  }
+
   body.site-mode #demoAtoms .live-node {
     --site-atom-scale: 0.5;
     filter: saturate(0.95);

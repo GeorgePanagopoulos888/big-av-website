@@ -30,12 +30,13 @@ const PHASE2_SPAWNS = [
 
 const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
+const USE_STAGE_WAVES = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 const ALLOW_LIVE_TTS =
   location.protocol === "http:" &&
   (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
-const BRADLEY_BUILD = "site-show-36";
+const BRADLEY_BUILD = "site-show-37";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -43,6 +44,7 @@ console.info("[Bradley] loaded", BRADLEY_BUILD, {
   phase2Labels: PHASE2_SPAWNS.map((atom) => atom.label),
   touchDevice: IS_TOUCH_DEVICE,
   webAudioGlow: USE_WEB_AUDIO_GLOW,
+  stageWaves: USE_STAGE_WAVES,
   spawnLagSec: SPAWN_OUTPUT_LAG_SEC,
   liveTts: ALLOW_LIVE_TTS,
 });
@@ -204,7 +206,7 @@ function initShowDom() {
   startBtn = document.getElementById("siteStart");
   voiceStatus = document.getElementById("siteStatus");
   bradleyBulbImg = bradleyCore?.querySelector("img") || null;
-  stageVizCanvas = ensureCanvas("stage-viz-canvas", liveSystem, "site-stage-viz");
+  stageVizCanvas = USE_STAGE_WAVES ? ensureCanvas("stage-viz-canvas", liveSystem, "site-stage-viz") : null;
   filamentCanvas = ensureCanvas("filament-canvas", bradleyCore, "site-filament-viz");
 }
 
@@ -836,6 +838,7 @@ function bulbBreathLevel(amp = 0, hot = false) {
 }
 
 function resizeStageVizCanvas() {
+  if (!USE_STAGE_WAVES) return;
   if (!stageVizCanvas || !liveSystem) return;
   const rect = liveSystem.getBoundingClientRect();
   const w = Math.max(280, Math.round(rect.width));
@@ -948,6 +951,7 @@ function drawBradleyVoiceWaves(cx, cy, hot, ampBase, layer = "all") {
 }
 
 function drawBradleyStage(b, hot) {
+  if (!USE_STAGE_WAVES) return;
   resizeStageVizCanvas();
   if (!stageVizCanvas || !stageVizCtx || !liveSystem) return;
   const stageW = liveSystem.clientWidth;
@@ -1048,7 +1052,8 @@ function applyVoiceAmp(amp) {
 }
 
 function startGlow() {
-  if (typeof beginSpeakingVisual === "function") beginSpeakingVisual("Speaking");
+  document.body.classList.add("bradley-speaking", "speaking");
+  if (!IS_TOUCH_DEVICE && typeof beginSpeakingVisual === "function") beginSpeakingVisual("Speaking");
   glowSmooth = 0;
 
   const loop = () => {
@@ -1075,7 +1080,8 @@ function stopGlow() {
   if (glowRaf) cancelAnimationFrame(glowRaf);
   glowRaf = 0;
   glowSmooth = 0;
-  if (typeof endSpeakingVisual === "function") endSpeakingVisual();
+  document.body.classList.remove("bradley-speaking", "speaking");
+  if (!IS_TOUCH_DEVICE && typeof endSpeakingVisual === "function") endSpeakingVisual();
   if (typeof setCoreAmp === "function") setCoreAmp(0);
 }
 
