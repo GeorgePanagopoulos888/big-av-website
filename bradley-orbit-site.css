@@ -489,7 +489,8 @@ body.site-mode.show-running #dispatchOrbit .node {
   }
 
   body.site-mode .voice-waves,
-  body.site-mode .site-stage-viz {
+  body.site-mode .site-stage-viz,
+  body.site-mode .site-filament-viz {
     display: none !important;
   }
 

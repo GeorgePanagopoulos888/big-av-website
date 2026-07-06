@@ -32,13 +32,14 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const USE_STAGE_WAVES = !IS_TOUCH_DEVICE;
 const USE_CONTINUOUS_SHOW_AUDIO = IS_TOUCH_DEVICE;
+const USE_FILAMENT_OVERLAY = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 const CONTINUOUS_SHOW_AUDIO_PATH = "assets/bradley-voice/bradley-show-mobile.wav";
 const ALLOW_LIVE_TTS =
   location.protocol === "http:" &&
   (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
-const BRADLEY_BUILD = "site-show-39";
+const BRADLEY_BUILD = "site-show-40";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -48,6 +49,7 @@ console.info("[Bradley] loaded", BRADLEY_BUILD, {
   webAudioGlow: USE_WEB_AUDIO_GLOW,
   stageWaves: USE_STAGE_WAVES,
   continuousAudio: USE_CONTINUOUS_SHOW_AUDIO,
+  filamentOverlay: USE_FILAMENT_OVERLAY,
   spawnLagSec: SPAWN_OUTPUT_LAG_SEC,
   liveTts: ALLOW_LIVE_TTS,
 });
@@ -230,7 +232,7 @@ function initShowDom() {
   voiceStatus = document.getElementById("siteStatus");
   bradleyBulbImg = bradleyCore?.querySelector("img") || null;
   stageVizCanvas = USE_STAGE_WAVES ? ensureCanvas("stage-viz-canvas", liveSystem, "site-stage-viz") : null;
-  filamentCanvas = ensureCanvas("filament-canvas", bradleyCore, "site-filament-viz");
+  filamentCanvas = USE_FILAMENT_OVERLAY ? ensureCanvas("filament-canvas", bradleyCore, "site-filament-viz") : null;
 }
 
 let showRunning = false;
@@ -881,6 +883,7 @@ function resizeStageVizCanvas() {
 }
 
 function resizeFilamentCanvas() {
+  if (!USE_FILAMENT_OVERLAY) return;
   if (!filamentCanvas || !bradleyCore) return;
   const rect = bradleyCore.getBoundingClientRect();
   const size = Math.max(180, Math.round(rect.width * 0.78));
@@ -1004,6 +1007,7 @@ function drawBradleyStage(b, hot) {
 }
 
 function drawFilamentGlow(b, hot) {
+  if (!USE_FILAMENT_OVERLAY) return;
   resizeFilamentCanvas();
   if (!filamentCanvas || !filamentCtx) return;
   const size = filamentCanvas.clientWidth || filamentCanvas.width;
@@ -1056,7 +1060,11 @@ function drawFilamentGlow(b, hot) {
 function applyBradleyBulbLook(b, hot) {
   const img = bradleyBulbImg || bradleyCore?.querySelector("img");
   if (img) {
-    img.style.filter = `drop-shadow(0 0 ${(14 + b * 48).toFixed(0)}px rgba(255,176,72,${(0.3 + b * 0.5).toFixed(2)})) brightness(${(0.92 + b * 0.45).toFixed(2)})`;
+    const glowPx = IS_TOUCH_DEVICE ? 22 + b * 78 : 14 + b * 48;
+    const glowAlpha = IS_TOUCH_DEVICE ? 0.42 + b * 0.48 : 0.3 + b * 0.5;
+    const brightness = IS_TOUCH_DEVICE ? 1.02 + b * 0.58 : 0.92 + b * 0.45;
+    const saturation = IS_TOUCH_DEVICE ? 1.08 + b * 0.35 : 1;
+    img.style.filter = `drop-shadow(0 0 ${glowPx.toFixed(0)}px rgba(255,176,72,${glowAlpha.toFixed(2)})) brightness(${brightness.toFixed(2)}) saturate(${saturation.toFixed(2)})`;
   }
   liveSystem?.style.setProperty("--bulb-b", b.toFixed(3));
   liveSystem?.style.setProperty("--bulb-hot", hot ? "1" : "0");
