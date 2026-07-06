@@ -9,7 +9,7 @@
 
 const BRADLEY_TTS = window.BRADLEY_TTS_URL || "http://127.0.0.1:8000";
 const ORBIT = { rx: 39, ry: 20, rot: -10 };
-const ORBIT_COMPACT = { rx: 40, ry: 24, rot: -10 };
+const ORBIT_COMPACT = { rx: 38, ry: 22, rot: -10 };
 const ORBIT_SLOTS = 12;
 const ORBIT_FILL_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const ORBIT_PERIOD_S = 42;
@@ -32,7 +32,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "site-show-31";
+const BRADLEY_BUILD = "site-show-32";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -208,7 +208,7 @@ function activeOrbitConfig() {
 }
 
 function orbitPositionsFrozen() {
-  return compactStageMode() || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 function setSiteDemoStatus(text, isError = false) {

@@ -100,6 +100,19 @@
       '<span class="site-headline">Take control of everything.<br>Without having to do anything.</span><span class="site-eyebrow">AV is IT · AI UX · UC</span>';
   }
 
+  function refreshSiteGeometry() {
+    if (typeof resizeWaveCanvas === "function") resizeWaveCanvas();
+    if (typeof updateNodePositions === "function") updateNodePositions(0);
+    if (typeof draw === "function") draw();
+  }
+
+  function scheduleSiteGeometryRefresh() {
+    refreshSiteGeometry();
+    [80, 260, 700].forEach((delay) => {
+      window.setTimeout(refreshSiteGeometry, delay);
+    });
+  }
+
   function initSiteMode() {
     document.body.classList.add("site-mode");
     document.documentElement.classList.add("site-mode");
@@ -116,6 +129,10 @@
     }
 
     window.BradleySiteShow.init();
+    scheduleSiteGeometryRefresh();
+    window.addEventListener("resize", scheduleSiteGeometryRefresh, { passive: true });
+    window.visualViewport?.addEventListener("resize", scheduleSiteGeometryRefresh, { passive: true });
+    window.visualViewport?.addEventListener("scroll", scheduleSiteGeometryRefresh, { passive: true });
 
     const startBtn = document.getElementById("siteStart");
     if (startBtn) {

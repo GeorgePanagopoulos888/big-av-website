@@ -1883,6 +1883,18 @@ function qwiok(){
   }catch(e){}
 }
 function center(el){const s=surface.getBoundingClientRect(), r=el.getBoundingClientRect(); return{x:r.left-s.left+r.width/2,y:r.top-s.top+r.height/2}}
+function isSiteMode(){return document.body.classList.contains("site-mode")}
+function siteWaveBox(){
+  const root=surface.getBoundingClientRect();
+  const target=isSiteMode()?system:surface;
+  const r=target.getBoundingClientRect();
+  return {left:r.left-root.left,top:r.top-root.top,width:r.width,height:r.height};
+}
+function waveCenter(){
+  if(!isSiteMode()) return center(core);
+  const w=waveCanvas.getBoundingClientRect(), r=core.getBoundingClientRect();
+  return {x:r.left-w.left+r.width/2,y:r.top-w.top+r.height/2};
+}
 function fittedRail(rail,parent){
   const safeX=84, safeY=92;
   const rot=Math.abs((rail.rot||0)*Math.PI/180);
@@ -1932,10 +1944,14 @@ function placeNodes(now){
   requestAnimationFrame(placeNodes);
 }
 function resizeWaveCanvas(){
-  const r=surface.getBoundingClientRect();
+  const r=siteWaveBox();
   waveDpr=Math.min(2,window.devicePixelRatio||1);
   waveCanvas.width=Math.max(1,Math.floor(r.width*waveDpr));
   waveCanvas.height=Math.max(1,Math.floor(r.height*waveDpr));
+  waveCanvas.style.left=r.left+"px";
+  waveCanvas.style.top=r.top+"px";
+  waveCanvas.style.right="auto";
+  waveCanvas.style.bottom="auto";
   waveCanvas.style.width=r.width+"px";
   waveCanvas.style.height=r.height+"px";
   waveCtx.setTransform(waveDpr,0,0,waveDpr,0,0);
@@ -1949,12 +1965,14 @@ function drawVoiceWaves(){
   const targetAmp=speaking ? Math.max(.20,speakAmp) : (activeVoice ? Math.min(1,Math.max(.12,micLevel*18)) : 0);
   setCoreAmp(targetAmp);
   if(!activeVoice&&!speaking) return;
-  const c=center(core), t=performance.now()/420;
+  const c=waveCenter(), t=performance.now()/420;
+  const coreWidth=core.getBoundingClientRect().width||470;
+  const waveScale=isSiteMode()?Math.max(.34,Math.min(.82,(coreWidth/470)*.92)):1;
   const ampBase=speaking ? .16 : Math.min(.55,Math.max(.12,micLevel*12));
   const color=speaking?"255,190,92":"132,200,255";
   for(let band=0;band<3;band++){
-    const radius=150+band*34+Math.sin(t+band)*6;
-    const amp=(18+band*7)*ampBase;
+    const radius=(150+band*34+Math.sin(t+band)*6)*waveScale;
+    const amp=(18+band*7)*ampBase*waveScale;
     waveCtx.beginPath();
     for(let i=0;i<=220;i++){
       const a=(Math.PI*2*i/220);
@@ -1972,11 +1990,11 @@ function drawVoiceWaves(){
     waveCtx.stroke();
   }
   for(let band=0;band<2;band++){
-    const radius=70+band*18+Math.sin(t*1.7+band)*5;
+    const radius=(70+band*18+Math.sin(t*1.7+band)*5)*waveScale;
     waveCtx.beginPath();
     for(let i=0;i<=120;i++){
       const a=(Math.PI*2*i/120);
-      const wobble=Math.sin(a*7+t*3+band)*10*ampBase;
+      const wobble=Math.sin(a*7+t*3+band)*10*ampBase*waveScale;
       const x=c.x+Math.cos(a)*(radius+wobble);
       const y=c.y+Math.sin(a)*(radius*.72+wobble*.35);
       i===0?waveCtx.moveTo(x,y):waveCtx.lineTo(x,y);

@@ -118,6 +118,13 @@ body.site-mode .core img {
   height: 82%;
 }
 
+body.site-mode .voice-waves {
+  inset: auto;
+  z-index: 2;
+  opacity: 0.56;
+  mix-blend-mode: screen;
+}
+
 body.site-mode #tasksOrbit .node,
 body.site-mode #dispatchOrbit .node {
   visibility: hidden;
