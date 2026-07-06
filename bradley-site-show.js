@@ -31,7 +31,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "site-show-26";
+const BRADLEY_BUILD = "site-show-27";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -71,7 +71,7 @@ const BRADLEY_SCRIPT = [
     title: "Friction",
     line: "No more app-hunting, wall tapping, or guessing which screen rules what.",
     speak: "No more app-hunting, wall tapping, or guessing which screen rules what.",
-    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 1.52, lagSec: 0 }],
+    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 0.72, lagSec: 0 }],
   },
   {
     id: "beat_03",
@@ -87,7 +87,7 @@ const BRADLEY_SCRIPT = [
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
       { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.0, slot: 2, lagSec: 0 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.1, slot: 0, lagSec: 0 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 2.45, slot: 0, lagSec: 0 },
     ],
   },
   {
@@ -96,7 +96,7 @@ const BRADLEY_SCRIPT = [
     line: "Comfort settles: climate adjusts, theater waits, and security watches.",
     speak: "Comfort settles: climate adjusts, theater waits, and security watches.",
     spawn: [
-      { id: "climate", label: "Climate", rgb: "121,227,143", atSec: 1.3 },
+      { id: "climate", label: "Climate", rgb: "121,227,143", atSec: 0.86 },
       { id: "theater", label: "Theater", rgb: "245,200,94", atSec: 2.58 },
       { id: "security", label: "Security", rgb: "194,140,255", atSec: 3.44 },
     ],
@@ -130,7 +130,7 @@ const BRADLEY_SCRIPT = [
     title: "Time",
     line: "Staff regain time usually lost to setup rituals.",
     speak: "Staff regain time usually lost to setup rituals.",
-    spawn: [{ id: "time", label: "Time", rgb: "216,171,69", atSec: 1.2 }],
+    spawn: [{ id: "time", label: "Time", rgb: "216,171,69", atSec: 0.82 }],
   },
   {
     id: "beat_10",
