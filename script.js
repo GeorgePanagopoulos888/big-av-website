@@ -68,7 +68,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "bradley-app-bulb-21";
+const BRADLEY_BUILD = "bradley-app-bulb-22";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -781,9 +781,12 @@ function drawBradleyStage(b, hot) {
 }
 
 function applyBradleyBulbLook(b, hot) {
+  const img = bradleyBulbImg || bradleyCore?.querySelector("img");
+  if (img) {
+    img.style.filter = `drop-shadow(0 0 ${(14 + b * 48).toFixed(0)}px rgba(255,176,72,${(0.3 + b * 0.5).toFixed(2)})) brightness(${(0.92 + b * 0.45).toFixed(2)})`;
+  }
   liveSystem?.style.setProperty("--bulb-b", b.toFixed(3));
   liveSystem?.style.setProperty("--bulb-hot", hot ? "1" : "0");
-  bradleyCore?.style.setProperty("--bulb-b", b.toFixed(3));
   drawBradleyStage(b, hot);
 }
 
@@ -792,12 +795,8 @@ function applyVoiceAmp(amp) {
   const speaking = document.body.classList.contains("bradley-speaking");
   const hot = speaking;
   const b = bulbBreathLevel(amp, hot);
-  const filament = Math.min(1, amp * 1.35 + (hot ? 0.22 : 0.06)).toFixed(3);
-  const jitter = (amp * 3.4 + (hot ? 0.35 : 0)).toFixed(3);
   applyBradleyBulbLook(b, hot);
   bradleyCore?.style.setProperty("--voice-amp", value);
-  bradleyCore?.style.setProperty("--filament-glow", filament);
-  bradleyCore?.style.setProperty("--filament-jitter", jitter);
   liveSystem?.style.setProperty("--voice-amp", value);
   liveAtoms?.querySelectorAll(".live-node").forEach((node) => {
     node.style.setProperty("--voice-amp", value);
@@ -827,8 +826,6 @@ function stopGlow() {
   glowSmooth = 0;
   applyBradleyBulbLook(bulbBreathLevel(0, false), false);
   applyVoiceAmp(0);
-  bradleyCore?.style.setProperty("--filament-glow", "0");
-  bradleyCore?.style.setProperty("--filament-jitter", "0");
   startIdleBulbBreath();
 }
 
