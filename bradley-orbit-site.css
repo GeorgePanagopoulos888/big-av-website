@@ -316,8 +316,8 @@ body.site-mode.show-running #dispatchOrbit .node {
     --site-logo-top: 30px;
     --site-logo-size: clamp(36px, 9.8vw, 44px);
     --site-copy-top: 122px;
-    --site-copy-width: calc(100% - 54px);
-    --site-headline-size: clamp(18px, 5.2vw, 22px);
+    --site-copy-width: calc(100% - 70px);
+    --site-headline-size: clamp(16px, 4.85vw, 20px);
     --site-stage-top: 51.2%;
     --site-stage-width: min(390px, calc(100% - 28px));
     --site-stage-height: min(336px, calc(100vh - 430px));
@@ -355,6 +355,7 @@ body.site-mode.show-running #dispatchOrbit .node {
 
   body.site-mode .site-headline {
     line-height: 1.02;
+    max-width: 100%;
   }
 
   body.site-mode .top.site-brand-lockup .sub {
@@ -477,14 +478,17 @@ body.site-mode.show-running #dispatchOrbit .node {
 
   .site-demo-bar {
     gap: 7px;
-    width: calc(100vw - 34px);
+    width: min(390px, calc(100vw - 48px));
   }
 
   .site-demo-bar #siteCaption {
-    max-width: 22rem;
-    padding: 7px 12px;
+    width: min(320px, calc(100vw - 88px));
+    max-width: 100%;
+    padding: 8px 14px;
     font-size: 12px;
     line-height: 1.35;
+    text-wrap: balance;
+    overflow-wrap: break-word;
   }
 
   .site-demo-bar #siteStatus {
