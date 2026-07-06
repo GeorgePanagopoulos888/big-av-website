@@ -35,7 +35,7 @@ const ALLOW_LIVE_TTS =
   location.protocol === "http:" &&
   (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
-const BRADLEY_BUILD = "site-show-34";
+const BRADLEY_BUILD = "site-show-35";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -195,6 +195,8 @@ let bradleyAnalyser = null;
 const bradleyAudioSources = new WeakMap();
 const bakedVoiceCache = new Map();
 let bakedVoiceWarmupPromise = null;
+let bakedVoiceReady = false;
+let bakedVoiceLastResult = null;
 let currentAudio = null;
 let spawnTimers = [];
 let spawnRaf = 0;
@@ -1238,6 +1240,7 @@ function resetShow() {
 }
 
 async function preloadBradleyVoice() {
+  if (bakedVoiceReady && bakedVoiceLastResult) return bakedVoiceLastResult;
   if (bakedVoiceWarmupPromise) return bakedVoiceWarmupPromise;
 
   bakedVoiceWarmupPromise = (async () => {
@@ -1262,6 +1265,8 @@ async function preloadBradleyVoice() {
       );
     }
     const result = { loaded, failed, total: assets.length };
+    bakedVoiceLastResult = result;
+    bakedVoiceReady = failed === 0;
     if (failed) bakedVoiceWarmupPromise = null;
     return result;
   })();
@@ -1283,4 +1288,5 @@ window.BradleySiteShow = {
   },
   reset: resetShow,
   preload: preloadBradleyVoice,
+  isReady: () => bakedVoiceReady,
 };

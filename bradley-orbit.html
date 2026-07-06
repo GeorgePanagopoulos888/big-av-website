@@ -485,7 +485,7 @@ button.cp-armed{border-color:rgba(255,154,98,.6)!important;color:#ffb98a!importa
 @media(max-width:1120px){body{overflow:auto}.app{height:1050px;grid-template-columns:76px 1fr}.side{display:none}.title{font-size:58px}.system{width:740px;height:740px}.core{width:380px;height:380px}.core img{width:304px;height:304px}.deep{left:18px;top:104px;width:calc(100% - 36px);height:620px;grid-template-columns:1fr}.deep-side{display:none}.workspace-panel{left:18px;right:auto;top:104px;width:calc(100% - 36px);height:620px}.wp-grid{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
+<body class="site-mode">
 <div class="ribbon top"></div><div class="ribbon bottom"></div>
 <main class="app">
   <nav class="rail">
@@ -4197,9 +4197,11 @@ surface.addEventListener("pointerdown",e=>{
 });
 setVoiceStatus("Muted", true);
 setSideForItem({title:"Bradley",desc:"Home command center. Listening, routing, receipts, and safe action.",what:"Click an atom to inspect it here. Ask Bradley from the command bar or by voice.",kind:"home",chain:"voice/text -> Executive Intake -> local tools or worker queue -> receipts"},null);
-refreshSidePanel();
-setInterval(refreshSidePanel,8000);
-refreshMediaDevices({requestPermission:false, render:false}).then(()=>setVoiceStatus("Tap mic to unmute", true)).catch(()=>setVoiceStatus("Tap mic to unmute", true));
+if(!isSiteMode()) refreshSidePanel();
+setInterval(()=>{ if(!isSiteMode()) refreshSidePanel(); },8000);
+if(!isSiteMode()){
+  refreshMediaDevices({requestPermission:false, render:false}).then(()=>setVoiceStatus("Tap mic to unmute", true)).catch(()=>setVoiceStatus("Tap mic to unmute", true));
+}
 window.addEventListener("resize",()=>{resizeWaveCanvas(); draw();});
 resizeWaveCanvas();
 updateNodePositions(0);

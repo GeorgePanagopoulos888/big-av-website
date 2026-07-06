@@ -84,7 +84,7 @@
     const bar = document.createElement("div");
     bar.className = "site-demo-bar";
     bar.innerHTML =
-      '<div class="site-bradley-name">Bradley</div><p id="siteCaption" aria-live="assertive"></p><p id="siteStatus" aria-live="polite">Live demo</p><button type="button" id="siteStart">Let Bradley speak</button>';
+      '<div class="site-bradley-name">Bradley</div><p id="siteCaption" aria-live="assertive"></p><p id="siteStatus" aria-live="polite">Loading show</p><button type="button" id="siteStart" disabled>Loading show...</button>';
     surface.appendChild(bar);
   }
 
@@ -113,6 +113,56 @@
     });
   }
 
+  let showPreloadPromise = null;
+
+  async function warmShowAssets(options = {}) {
+    const keepDisabled = Boolean(options.keepDisabled);
+    const startBtn = document.getElementById("siteStart");
+
+    if (!window.BradleySiteShow) {
+      if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.textContent = "Show unavailable";
+      }
+      return { loaded: 0, failed: 1, total: 0 };
+    }
+
+    if (!window.BradleySiteShow.isReady?.()) {
+      if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.textContent = "Loading show...";
+      }
+    }
+
+    showPreloadPromise = showPreloadPromise || window.BradleySiteShow.preload();
+
+    try {
+      const result = await showPreloadPromise;
+      if (result?.failed) {
+        showPreloadPromise = null;
+        if (startBtn) {
+          startBtn.disabled = false;
+          startBtn.textContent = "Retry loading show";
+        }
+        return result;
+      }
+
+      if (startBtn && !keepDisabled && startBtn.textContent !== "Run it again") {
+        startBtn.disabled = false;
+        startBtn.textContent = "Let Bradley speak";
+      }
+      return result;
+    } catch (error) {
+      showPreloadPromise = null;
+      console.warn("[Bradley site] show preload failed", error);
+      if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.textContent = "Retry loading show";
+      }
+      return { loaded: 0, failed: 1, total: 0 };
+    }
+  }
+
   function initSiteMode() {
     document.body.classList.add("site-mode");
     document.documentElement.classList.add("site-mode");
@@ -133,12 +183,17 @@
     window.addEventListener("resize", scheduleSiteGeometryRefresh, { passive: true });
     window.visualViewport?.addEventListener("resize", scheduleSiteGeometryRefresh, { passive: true });
     window.visualViewport?.addEventListener("scroll", scheduleSiteGeometryRefresh, { passive: true });
+    window.setTimeout(() => warmShowAssets(), 250);
 
     const startBtn = document.getElementById("siteStart");
     if (startBtn) {
       startBtn.addEventListener("click", async () => {
         if (startBtn.textContent === "Run it again") window.BradleySiteShow.reset();
         startBtn.disabled = true;
+        const preloadResult = await warmShowAssets({ keepDisabled: true });
+        if (preloadResult?.failed) return;
+
+        startBtn.textContent = "Bradley is speaking...";
         document.body.classList.add("show-running");
         try {
           await window.BradleySiteShow.run();
