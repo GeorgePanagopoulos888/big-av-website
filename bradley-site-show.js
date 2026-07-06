@@ -31,7 +31,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "site-show-28";
+const BRADLEY_BUILD = "site-show-29";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -1070,6 +1070,7 @@ async function runBradleyShow() {
   }
   for (const beat of BRADLEY_SCRIPT) {
     if (!showRunning) break;
+    setSiteDemoStatus("Speaking");
     setCaption(beat.line);
 
     await speakBradley(beat);
@@ -1112,7 +1113,7 @@ function resetShow() {
 async function preloadBradleyVoice() {
   const results = await Promise.allSettled(BRADLEY_SCRIPT.map((beat) => loadBakedParts(beat)));
   const loaded = results.filter((result) => result.status === "fulfilled").length;
-  if (loaded) {
+  if (loaded && !showRunning) {
     setSiteDemoStatus(`Bradley ready · ${loaded} beats cached`);
   }
 }
