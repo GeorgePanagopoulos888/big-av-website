@@ -29,7 +29,7 @@ const PHASE2_SPAWNS = [
 ];
 
 const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
+const USE_WEB_AUDIO_GLOW = false;
 const USE_STAGE_WAVES = false;
 const USE_CONTINUOUS_SHOW_AUDIO = IS_TOUCH_DEVICE;
 const USE_FILAMENT_OVERLAY = false;
@@ -39,7 +39,7 @@ const ALLOW_LIVE_TTS =
   location.protocol === "http:" &&
   (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
-const BRADLEY_BUILD = "site-show-42-clean-overlays";
+const BRADLEY_BUILD = "site-show-43-direct-audio";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
