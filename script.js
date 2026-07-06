@@ -68,7 +68,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "spawn-sync-filament-waves-17";
+const BRADLEY_BUILD = "bradley-app-bulb-18";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -205,6 +205,11 @@ const BRADLEY_SCRIPT = [
 
 const liveSystem = document.getElementById("live-system");
 const bradleyCore = document.getElementById("bradley-core");
+const bradleyBulbImg = document.getElementById("bradley-bulb-img");
+const coreWaveCanvas = document.getElementById("core-wave-canvas");
+const speechVizData = new Float32Array(1024);
+let coreWaveCtx = null;
+let idleBulbRaf = 0;
 const liveAtoms = document.getElementById("live-atoms");
 const bradleyLine = document.getElementById("bradley-line");
 const liveTitle = document.getElementById("live-title");
@@ -698,13 +703,86 @@ function readVoiceAmplitude() {
   return Math.min(1, Math.max(0, glowSmooth * 1.72 + 0.1));
 }
 
+function updateSpeechViz() {
+  const t = Date.now() / 260;
+  for (let i = 0; i < speechVizData.length; i += 1) {
+    const p = i / speechVizData.length;
+    speechVizData[i] = Math.sin(p * 32 + t) * 0.22 + Math.sin(p * 71 + t * 0.7) * 0.08;
+  }
+  return speechVizData;
+}
+
+function bulbBreathLevel(amp = 0, hot = false) {
+  const breath = (Math.sin(Date.now() / 2100) + 1) / 2;
+  if (hot && amp > 0.04) return Math.min(1, 0.68 + breath * 0.18 + amp * 0.12);
+  return 0.07 + breath * 0.07;
+}
+
+function resizeCoreWaveCanvas() {
+  if (!coreWaveCanvas || !bradleyCore) return;
+  const rect = bradleyCore.getBoundingClientRect();
+  const w = Math.max(220, Math.round(rect.width * 1.08));
+  const h = Math.max(48, Math.round(rect.width * 0.2));
+  if (coreWaveCanvas.width !== w || coreWaveCanvas.height !== h) {
+    coreWaveCanvas.width = w;
+    coreWaveCanvas.height = h;
+    coreWaveCtx = coreWaveCanvas.getContext("2d");
+  }
+}
+
+function drawCoreWaves(data, gain, hot) {
+  resizeCoreWaveCanvas();
+  if (!coreWaveCanvas || !coreWaveCtx) return;
+  const w = coreWaveCanvas.width;
+  const h = coreWaveCanvas.height;
+  coreWaveCtx.clearRect(0, 0, w, h);
+  if (!data || gain <= 0) {
+    coreWaveCanvas.style.opacity = "0";
+    return;
+  }
+  const yb = h * 0.5;
+  const waveAmp = Math.min(h * 0.42, 40);
+  for (const dir of [1, -1]) {
+    coreWaveCtx.beginPath();
+    for (let x = 0; x <= w; x += 3) {
+      const i = Math.floor((x / Math.max(1, w)) * data.length);
+      const v = (data[i] || 0) * gain * dir;
+      const y = yb + v * waveAmp;
+      if (x === 0) coreWaveCtx.moveTo(x, y);
+      else coreWaveCtx.lineTo(x, y);
+    }
+    coreWaveCtx.strokeStyle = hot ? "rgba(255,190,92,.85)" : "rgba(143,192,255,.8)";
+    coreWaveCtx.lineWidth = 2;
+    coreWaveCtx.lineCap = "round";
+    coreWaveCtx.stroke();
+  }
+  coreWaveCtx.strokeStyle = hot ? "rgba(255,190,92,.1)" : "rgba(143,192,255,.08)";
+  coreWaveCtx.lineWidth = 1;
+  coreWaveCtx.beginPath();
+  coreWaveCtx.moveTo(0, yb);
+  coreWaveCtx.lineTo(w, yb);
+  coreWaveCtx.stroke();
+  coreWaveCanvas.style.opacity = String(Math.min(1, 0.42 + gain * 0.12));
+}
+
+function applyBradleyBulbLook(b, hot, waveData, gain = 0) {
+  const img = bradleyBulbImg || bradleyCore?.querySelector("img");
+  if (img) {
+    img.style.filter = `drop-shadow(0 0 ${(14 + b * 48).toFixed(0)}px rgba(255,176,72,${(0.3 + b * 0.5).toFixed(2)})) brightness(${(0.92 + b * 0.45).toFixed(2)})`;
+  }
+  liveSystem?.style.setProperty("--bulb-b", b.toFixed(3));
+  liveSystem?.style.setProperty("--bulb-hot", hot ? "1" : "0");
+  drawCoreWaves(waveData, gain, hot);
+}
+
 function applyVoiceAmp(amp) {
   const value = amp.toFixed(3);
-  const filament = Math.min(1, amp * 1.35 + 0.08).toFixed(3);
-  const jitter = (amp * 3.4).toFixed(3);
+  const hot = document.body.classList.contains("bradley-speaking") && amp > 0.04;
+  const b = bulbBreathLevel(amp, hot);
+  const waveData = hot ? updateSpeechViz() : null;
+  const gain = hot ? 2.7 : 0;
+  applyBradleyBulbLook(b, hot, waveData, gain);
   bradleyCore?.style.setProperty("--voice-amp", value);
-  bradleyCore?.style.setProperty("--filament-glow", filament);
-  bradleyCore?.style.setProperty("--filament-jitter", jitter);
   liveSystem?.style.setProperty("--voice-amp", value);
   liveAtoms?.querySelectorAll(".live-node").forEach((node) => {
     node.style.setProperty("--voice-amp", value);
@@ -731,9 +809,20 @@ function stopGlow() {
   if (glowRaf) cancelAnimationFrame(glowRaf);
   glowRaf = 0;
   glowSmooth = 0;
+  applyBradleyBulbLook(bulbBreathLevel(0, false), false, null, 0);
   applyVoiceAmp(0);
-  bradleyCore?.style.setProperty("--filament-glow", "0");
-  bradleyCore?.style.setProperty("--filament-jitter", "0");
+  startIdleBulbBreath();
+}
+
+function startIdleBulbBreath() {
+  if (idleBulbRaf) cancelAnimationFrame(idleBulbRaf);
+  const loop = () => {
+    if (!document.body.classList.contains("bradley-speaking")) {
+      applyBradleyBulbLook(bulbBreathLevel(0, false), false, null, 0);
+    }
+    idleBulbRaf = requestAnimationFrame(loop);
+  };
+  idleBulbRaf = requestAnimationFrame(loop);
 }
 
 function usedOrbitSlots() {
@@ -984,3 +1073,6 @@ async function wireBookingsCta() {
 
 wireBookingsCta();
 setVoiceStatus("Live demo");
+resizeCoreWaveCanvas();
+startIdleBulbBreath();
+window.addEventListener("resize", resizeCoreWaveCanvas);
