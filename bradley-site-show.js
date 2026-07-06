@@ -31,12 +31,14 @@ const PHASE2_SPAWNS = [
 const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const USE_STAGE_WAVES = !IS_TOUCH_DEVICE;
+const USE_CONTINUOUS_SHOW_AUDIO = IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
+const CONTINUOUS_SHOW_AUDIO_PATH = "assets/bradley-voice/bradley-show-mobile.wav";
 const ALLOW_LIVE_TTS =
   location.protocol === "http:" &&
   (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
-const BRADLEY_BUILD = "site-show-37";
+const BRADLEY_BUILD = "site-show-38";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -45,6 +47,7 @@ console.info("[Bradley] loaded", BRADLEY_BUILD, {
   touchDevice: IS_TOUCH_DEVICE,
   webAudioGlow: USE_WEB_AUDIO_GLOW,
   stageWaves: USE_STAGE_WAVES,
+  continuousAudio: USE_CONTINUOUS_SHOW_AUDIO,
   spawnLagSec: SPAWN_OUTPUT_LAG_SEC,
   liveTts: ALLOW_LIVE_TTS,
 });
@@ -173,6 +176,26 @@ const BRADLEY_SCRIPT = [
   },
 ];
 
+const CONTINUOUS_SHOW_BEAT_STARTS = [
+  0,
+  7.48,
+  12.36,
+  19.32,
+  24.84,
+  30.36,
+  34.76,
+  40.68,
+  44.84,
+  48.84,
+  51.48,
+  60.76,
+];
+const CONTINUOUS_SHOW_PART_STARTS = {
+  beat_01: [0, 2.68],
+  beat_10: [0, 0.88],
+  beat_12: [0, 5.14],
+};
+
 let liveSystem = null;
 let bradleyCore = null;
 let liveAtoms = null;
@@ -220,6 +243,9 @@ const bakedVoiceCache = new Map();
 let bakedVoiceWarmupPromise = null;
 let bakedVoiceReady = false;
 let bakedVoiceLastResult = null;
+let continuousShowWarmupPromise = null;
+let continuousShowReady = false;
+let continuousShowLastResult = null;
 let currentAudio = null;
 let spawnTimers = [];
 let spawnRaf = 0;
@@ -1211,7 +1237,90 @@ function setCaption(text) {
   bradleyLine.textContent = String(text || "").trim();
 }
 
+function scheduleShowTimer(delayMs, fn) {
+  const timer = window.setTimeout(() => {
+    if (!showRunning) return;
+    fn();
+  }, Math.max(0, delayMs));
+  spawnTimers.push(timer);
+  return timer;
+}
+
+function continuousSpawnSec(atom) {
+  const base = Number.isFinite(atom.atSec) ? atom.atSec : Math.max(0.35, atom.at ?? 0);
+  const lag = Number.isFinite(atom.lagSec) ? atom.lagSec : SPAWN_OUTPUT_LAG_SEC;
+  return base + lag;
+}
+
+function scheduleContinuousShowEvents() {
+  CONTINUOUS_SHOW_BEAT_STARTS.forEach((beatStart, index) => {
+    const beat = BRADLEY_SCRIPT[index];
+    if (!beat) return;
+
+    scheduleShowTimer(beatStart * 1000, () => {
+      setSiteDemoStatus("Speaking");
+      setCaption(beat.line);
+    });
+
+    (beat.spawn || []).forEach((atom) => {
+      scheduleShowTimer((beatStart + continuousSpawnSec(atom)) * 1000, () => spawnAtom(atom));
+    });
+
+    if (beat.orbitSwapOnPart !== undefined) {
+      const partStarts = CONTINUOUS_SHOW_PART_STARTS[beat.id] || [0];
+      const partStart = partStarts[beat.orbitSwapOnPart] || 0;
+      const delaySec = (beat.orbitSwapDelayMs || 0) / 1000;
+      scheduleShowTimer((beatStart + partStart + delaySec) * 1000, () => {
+        runOrbitSwap(beat).catch((error) => console.warn("[Bradley] orbit swap failed", error));
+      });
+    }
+  });
+}
+
+async function runBradleyShowContinuous() {
+  if (showRunning) return;
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.textContent = "Loading show...";
+  }
+  const audio = await loadContinuousShowAudio();
+  clearShowVisualState();
+  showRunning = true;
+  ensureOrbitMotion();
+  let completed = false;
+
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.textContent = "Bradley is speaking...";
+  }
+
+  try {
+    scheduleContinuousShowEvents();
+    startGlow();
+    await playAudioOnly(audio);
+    completed = showRunning;
+  } catch (error) {
+    console.error("[Bradley] continuous show interrupted", error);
+    setCaption("");
+    setSiteDemoStatus("Show reset · tap to retry", true);
+    clearShowVisualState();
+  } finally {
+    stopGlow();
+    clearSpawnTimers();
+    pauseCurrentAudio();
+    showRunning = false;
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.textContent = completed ? "Run it again" : "Let Bradley speak";
+    }
+  }
+}
+
 async function runBradleyShow() {
+  if (USE_CONTINUOUS_SHOW_AUDIO) {
+    await runBradleyShowContinuous();
+    return;
+  }
   if (showRunning) return;
   if (startBtn) {
     startBtn.disabled = true;
@@ -1266,7 +1375,38 @@ function resetShow() {
   }
 }
 
+async function loadContinuousShowAudio() {
+  return loadCachedBakedAudio(CONTINUOUS_SHOW_AUDIO_PATH);
+}
+
+async function preloadContinuousBradleyShow() {
+  if (continuousShowReady && continuousShowLastResult) return continuousShowLastResult;
+  if (continuousShowWarmupPromise) return continuousShowWarmupPromise;
+
+  continuousShowWarmupPromise = (async () => {
+    setSiteDemoStatus("Loading show");
+    try {
+      await loadContinuousShowAudio();
+      const result = { loaded: 1, failed: 0, total: 1, continuous: true };
+      continuousShowLastResult = result;
+      continuousShowReady = true;
+      if (!showRunning) setSiteDemoStatus("Show ready");
+      return result;
+    } catch (error) {
+      continuousShowWarmupPromise = null;
+      continuousShowReady = false;
+      continuousShowLastResult = { loaded: 0, failed: 1, total: 1, continuous: true };
+      console.warn("[Bradley] continuous show failed", error);
+      if (!showRunning) setSiteDemoStatus("Show unavailable", true);
+      return continuousShowLastResult;
+    }
+  })();
+
+  return continuousShowWarmupPromise;
+}
+
 async function preloadBradleyVoice() {
+  if (USE_CONTINUOUS_SHOW_AUDIO) return preloadContinuousBradleyShow();
   if (bakedVoiceReady && bakedVoiceLastResult) return bakedVoiceLastResult;
   if (bakedVoiceWarmupPromise) return bakedVoiceWarmupPromise;
 
@@ -1287,9 +1427,7 @@ async function preloadBradleyVoice() {
     }
 
     if (!showRunning) {
-      setSiteDemoStatus(
-        failed ? `Show loaded · ${loaded}/${assets.length} voice clips` : `Show loaded · ${loaded} voice clips`
-      );
+      setSiteDemoStatus(failed ? `Show ready · ${loaded}/${assets.length}` : "Show ready");
     }
     const result = { loaded, failed, total: assets.length };
     bakedVoiceLastResult = result;
@@ -1315,5 +1453,5 @@ window.BradleySiteShow = {
   },
   reset: resetShow,
   preload: preloadBradleyVoice,
-  isReady: () => bakedVoiceReady,
+  isReady: () => (USE_CONTINUOUS_SHOW_AUDIO ? continuousShowReady : bakedVoiceReady),
 };

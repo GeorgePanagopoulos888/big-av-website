@@ -284,14 +284,15 @@ body.site-mode.show-running #dispatchOrbit .node {
 }
 
 .site-bradley-name {
-  margin: 0 0 -2px;
-  font: 900 clamp(38px, 5.4vw, 82px) / 0.82 BigAVDisplay, sans-serif;
+  margin: 0 0 -4px;
+  font: 900 clamp(38px, 5.4vw, 82px) / 1 BigAVDisplay, sans-serif;
   letter-spacing: 0;
   background: linear-gradient(105deg, #fff8d5 0%, #ffe3a2 38%, #d6a947 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   text-shadow: 0 0 34px rgba(216, 171, 69, 0.13);
+  overflow: visible;
 }
 
 .site-demo-bar #siteCaption {
@@ -509,7 +510,7 @@ body.site-mode.show-running #dispatchOrbit .node {
 
   .site-bradley-name {
     font-size: clamp(34px, 11vw, 46px);
-    line-height: 0.84;
+    line-height: 1;
   }
 
   .site-demo-bar {
