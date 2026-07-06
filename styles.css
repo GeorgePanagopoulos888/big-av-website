@@ -57,10 +57,7 @@ body {
 }
 
 body.bradley-speaking {
-  background:
-    radial-gradient(circle at 50% 34%, rgba(216, 171, 69, 0.07), transparent 22%),
-    radial-gradient(ellipse 120% 80% at 50% 40%, rgba(0, 0, 0, 0.2), #010101 68%),
-    linear-gradient(180deg, #010101 0%, #000000 100%);
+  background: linear-gradient(180deg, #010101 0%, #000000 100%);
 }
 
 body::after {
@@ -177,7 +174,7 @@ a {
 .bradley-live {
   padding: clamp(1.5rem, 4vw, 2.5rem) 0 clamp(2rem, 5vw, 3rem);
   border-bottom: 1px solid var(--line2);
-  background: radial-gradient(ellipse 110% 85% at 50% 38%, rgba(0, 0, 0, 0) 0%, var(--bg) 72%);
+  background: transparent;
 }
 
 .live-header {
@@ -288,39 +285,9 @@ body.bradley-speaking .live-caption:not([hidden]) {
   padding: 1.5rem 0 2.5rem;
 }
 
-.live-stage-wrap::before {
-  content: "";
-  position: absolute;
-  left: -10%;
-  right: -10%;
-  top: -1.5rem;
-  height: 42%;
-  pointer-events: none;
-  z-index: 6;
-  background: linear-gradient(
-    to bottom,
-    var(--bg) 0%,
-    rgba(1, 1, 1, 0.96) 24%,
-    rgba(1, 1, 1, 0.5) 58%,
-    transparent 100%
-  );
-}
-
+.live-stage-wrap::before,
 .live-stage-wrap::after {
-  content: "";
-  position: absolute;
-  left: -10%;
-  right: -10%;
-  bottom: 0;
-  height: 38%;
-  pointer-events: none;
-  z-index: 6;
-  background: linear-gradient(
-    to top,
-    var(--bg) 0%,
-    rgba(1, 1, 1, 0.88) 32%,
-    transparent 100%
-  );
+  content: none;
 }
 
 .live-system {
@@ -329,6 +296,29 @@ body.bradley-speaking .live-caption:not([hidden]) {
   position: relative;
   width: min(96vw, 720px);
   height: min(72vh, 620px);
+}
+
+.live-system::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(340px, 62vw);
+  height: min(340px, 62vw);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    circle,
+    rgba(var(--core-rgb), calc(0.22 + var(--voice-amp) * 0.34)) 0%,
+    rgba(var(--core-rgb), calc(0.08 + var(--voice-amp) * 0.12)) 38%,
+    rgba(var(--core-rgb), calc(0.02 + var(--voice-amp) * 0.04)) 62%,
+    transparent 78%
+  );
+  filter: blur(calc(28px + var(--voice-amp) * 18px));
+  opacity: calc(0.72 + var(--voice-amp) * 0.28);
+  transition: opacity 0.1s ease-out, filter 0.1s ease-out;
 }
 
 .live-system .orbit-line {
@@ -378,21 +368,7 @@ body.bradley-speaking .live-caption:not([hidden]) {
   pointer-events: none;
 }
 
-.core::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  z-index: 0;
-  border: none;
-  background: transparent;
-  box-shadow:
-    0 0 calc(44px + var(--voice-amp) * 50px) rgba(var(--core-rgb), calc(0.55 + var(--voice-amp) * 0.38)),
-    0 0 calc(88px + var(--voice-amp) * 62px) rgba(var(--core-rgb), calc(0.14 + var(--voice-amp) * 0.16)),
-    0 0 calc(140px + var(--voice-amp) * 48px) rgba(var(--core-rgb), calc(0.04 + var(--voice-amp) * 0.08));
-  transition: box-shadow 0.08s ease-out;
-}
-
+.core::before,
 .core::after {
   content: none;
 }
@@ -486,7 +462,7 @@ body.bradley-speaking .core-bulb::after {
   object-fit: contain;
   border-radius: 22%;
   background: transparent;
-  filter: drop-shadow(0 0 calc(6px + var(--voice-amp) * 10px) rgba(255, 181, 64, calc(0.28 + var(--voice-amp) * 0.32)));
+  filter: drop-shadow(0 0 calc(4px + var(--voice-amp) * 8px) rgba(255, 181, 64, calc(0.22 + var(--voice-amp) * 0.28)));
   animation: none;
   transform: none;
   transition: filter 0.08s ease-out;
