@@ -9,6 +9,7 @@
 
 const BRADLEY_TTS = window.BRADLEY_TTS_URL || "http://127.0.0.1:8000";
 const ORBIT = { rx: 39, ry: 20, rot: -10 };
+const ORBIT_COMPACT = { rx: 40, ry: 24, rot: -10 };
 const ORBIT_SLOTS = 12;
 const ORBIT_FILL_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const ORBIT_PERIOD_S = 42;
@@ -31,7 +32,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "site-show-29";
+const BRADLEY_BUILD = "site-show-30";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -198,6 +199,18 @@ let orbitRaf = 0;
 let orbitLastTs = 0;
 const spawned = new Set();
 
+function compactStageMode() {
+  return window.matchMedia("(max-width: 760px)").matches || IS_TOUCH_DEVICE;
+}
+
+function activeOrbitConfig() {
+  return compactStageMode() ? ORBIT_COMPACT : ORBIT;
+}
+
+function orbitPositionsFrozen() {
+  return compactStageMode() || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function setSiteDemoStatus(text, isError = false) {
   if (!voiceStatus) return;
   voiceStatus.textContent = text;
@@ -229,9 +242,10 @@ function stopAudio() {
 function positionOnOrbit(node, slot, phaseRad = orbitPhase) {
   const baseRad = (-90 * Math.PI) / 180 + slot * ((2 * Math.PI) / ORBIT_SLOTS);
   const rad = baseRad + phaseRad;
-  const rot = (ORBIT.rot * Math.PI) / 180;
-  const x = ORBIT.rx * Math.cos(rad);
-  const y = ORBIT.ry * Math.sin(rad);
+  const orbit = activeOrbitConfig();
+  const rot = (orbit.rot * Math.PI) / 180;
+  const x = orbit.rx * Math.cos(rad);
+  const y = orbit.ry * Math.sin(rad);
   const xr = x * Math.cos(rot) - y * Math.sin(rot);
   const yr = x * Math.sin(rot) + y * Math.cos(rot);
   node.style.left = `${50 + xr}%`;
@@ -239,6 +253,12 @@ function positionOnOrbit(node, slot, phaseRad = orbitPhase) {
 }
 
 function orbitLoop(ts) {
+  if (orbitPositionsFrozen()) {
+    orbitRaf = 0;
+    orbitLastTs = 0;
+    return;
+  }
+
   if (!orbitLastTs) orbitLastTs = ts;
   const dt = Math.min(0.05, (ts - orbitLastTs) / 1000);
   orbitLastTs = ts;
@@ -258,6 +278,7 @@ function orbitLoop(ts) {
 }
 
 function ensureOrbitMotion() {
+  if (orbitPositionsFrozen()) return;
   if (!orbitRaf) orbitRaf = requestAnimationFrame(orbitLoop);
 }
 
@@ -951,9 +972,10 @@ function nextOpenOrbitSlot() {
 function orbitSlotCoords(slot, phaseRad = orbitPhase) {
   const baseRad = (-90 * Math.PI) / 180 + slot * ((2 * Math.PI) / ORBIT_SLOTS);
   const rad = baseRad + phaseRad;
-  const rot = (ORBIT.rot * Math.PI) / 180;
-  const x = ORBIT.rx * Math.cos(rad);
-  const y = ORBIT.ry * Math.sin(rad);
+  const orbit = activeOrbitConfig();
+  const rot = (orbit.rot * Math.PI) / 180;
+  const x = orbit.rx * Math.cos(rad);
+  const y = orbit.ry * Math.sin(rad);
   return {
     xr: x * Math.cos(rot) - y * Math.sin(rot),
     yr: x * Math.sin(rot) + y * Math.cos(rot),
