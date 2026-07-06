@@ -366,6 +366,8 @@ body.bradley-speaking .live-caption:not([hidden]) {
 }
 
 .core {
+  --filament-glow: 0;
+  --filament-jitter: 0;
   position: absolute;
   left: 50%;
   top: 50%;
@@ -392,28 +394,133 @@ body.bradley-speaking .live-caption:not([hidden]) {
   width: 78%;
 }
 
-.filament-canvas {
+.core-filament-loops {
+  position: absolute;
+  left: 11%;
+  right: 11%;
+  top: 18%;
+  bottom: 28%;
+  z-index: 4;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.core-filament-loops path {
+  fill: none;
+  stroke: rgba(255, 190, 92, calc(0.5 + var(--filament-glow) * 0.5));
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 calc(4px + var(--filament-glow) * 12px) rgba(255, 190, 92, calc(0.45 + var(--filament-glow) * 0.55)));
+  transform-origin: 50% 62%;
+}
+
+.core-bulb::before {
+  content: "";
+  position: absolute;
+  left: 33%;
+  right: 33%;
+  top: 28%;
+  bottom: 52%;
+  z-index: 3;
+  border-radius: 40%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% 58%,
+    rgba(255, 248, 210, calc(0.42 + var(--filament-glow) * 0.95)),
+    rgba(255, 196, 72, calc(0.2 + var(--filament-glow) * 0.5)) 42%,
+    rgba(255, 140, 40, calc(0.05 + var(--filament-glow) * 0.22)) 62%,
+    transparent 78%
+  );
+  filter: blur(calc(1px + var(--filament-glow) * 1.2px));
+  mix-blend-mode: screen;
+  transition: filter 0.06s ease-out;
+}
+
+.core-voice-waves {
   position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 3;
+  top: 62%;
+  width: 108%;
+  height: 22%;
+  transform: translateX(-50%);
+  z-index: 2;
   pointer-events: none;
-  opacity: 0.45;
-  mix-blend-mode: screen;
+  opacity: calc(0.14 + var(--voice-amp) * 0.78);
+  transition: opacity 0.1s ease-out;
+}
+
+.core-wave {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.core-wave--top,
+.core-wave--bottom {
+  stroke: rgba(255, 190, 92, calc(0.38 + var(--voice-amp) * 0.62));
+  filter: drop-shadow(0 0 calc(6px + var(--voice-amp) * 14px) rgba(255, 190, 92, 0.5));
+}
+
+body.bradley-speaking .core-filament-loops path,
+body.bradley-speaking .core-bulb::before {
+  animation: filamentVibe 0.09s steps(2, end) infinite;
+}
+
+body.bradley-speaking .core-voice-waves {
+  animation: voiceWaveDrift 1.8s ease-in-out infinite;
+}
+
+@keyframes voiceWaveDrift {
+  0%,
+  100% {
+    transform: translateX(-50%) scaleY(1);
+  }
+
+  50% {
+    transform: translateX(-50%) scaleY(calc(1.08 + var(--voice-amp) * 0.22));
+  }
+}
+
+@keyframes filamentVibe {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  50% {
+    transform:
+      translate(
+        calc(var(--filament-jitter, 0) * 0.55px),
+        calc(var(--filament-jitter, 0) * -0.35px)
+      )
+      rotate(calc(var(--filament-jitter, 0) * 0.65deg));
+  }
+
+  100% {
+    transform:
+      translate(
+        calc(var(--filament-jitter, 0) * -0.45px),
+        calc(var(--filament-jitter, 0) * 0.4px)
+      )
+      rotate(calc(var(--filament-jitter, 0) * -0.5deg));
+  }
 }
 
 .core img,
 #bradley-bulb-img {
   position: relative;
-  z-index: 3;
+  z-index: 1;
   width: 100%;
   height: auto;
   object-fit: contain;
   border-radius: 22%;
   background: transparent;
-  filter: drop-shadow(0 0 18px rgba(255, 176, 72, 0.32)) brightness(0.95);
+  filter: drop-shadow(0 0 calc(14px + var(--bulb-b, 0.1) * 48px) rgba(255, 176, 72, calc(0.3 + var(--bulb-b, 0.1) * 0.5)))
+    brightness(calc(0.92 + var(--bulb-b, 0.1) * 0.45));
   will-change: filter;
+  transition: filter 0.08s ease-out;
 }
 
 .live-atoms {
@@ -1484,7 +1591,8 @@ li {
   }
 
   .core img,
-  .filament-canvas,
+  .core-filament-loops path,
+  .core-voice-waves,
   .stage-viz-canvas,
   #bradley-bulb-img {
     animation: none;
