@@ -35,7 +35,7 @@ const ALLOW_LIVE_TTS =
   location.protocol === "http:" &&
   (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
-const BRADLEY_BUILD = "site-show-35";
+const BRADLEY_BUILD = "site-show-36";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -177,6 +177,24 @@ let liveAtoms = null;
 let bradleyLine = null;
 let startBtn = null;
 let voiceStatus = null;
+let bradleyBulbImg = null;
+let stageVizCanvas = null;
+let stageVizCtx = null;
+let filamentCanvas = null;
+let filamentCtx = null;
+const speechVizData = new Float32Array(1024);
+
+function ensureCanvas(id, parent, className) {
+  let canvas = document.getElementById(id);
+  if (!canvas && parent) {
+    canvas = document.createElement("canvas");
+    canvas.id = id;
+    canvas.className = className;
+    canvas.setAttribute("aria-hidden", "true");
+    parent.prepend(canvas);
+  }
+  return canvas;
+}
 
 function initShowDom() {
   liveSystem = document.getElementById("system");
@@ -185,6 +203,9 @@ function initShowDom() {
   bradleyLine = document.getElementById("siteCaption");
   startBtn = document.getElementById("siteStart");
   voiceStatus = document.getElementById("siteStatus");
+  bradleyBulbImg = bradleyCore?.querySelector("img") || null;
+  stageVizCanvas = ensureCanvas("stage-viz-canvas", liveSystem, "site-stage-viz");
+  filamentCanvas = ensureCanvas("filament-canvas", bradleyCore, "site-filament-viz");
 }
 
 let showRunning = false;

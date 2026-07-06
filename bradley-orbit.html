@@ -2887,22 +2887,24 @@ function cpPicker(t,box){
 }
 /* live refresh: board data + focused task + badges. Bus replies drive mini-atom states. */
 let tbPollN=0;
-setInterval(async ()=>{
-  if(document.hidden) return;
-  tbPollN++;
-  if(TB.level===0&&tbPollN%4!==0) return;
-  const prev=TB.task?JSON.stringify(TB.task):"";
-  if(!(await tbLoad())) return;
-  cpBadges();
-  if(TB.level===3&&TB.task){
-    const t2=(TB.board.tasks[TB.task.area]||[]).find(x=>x.id===TB.task.id);
-    if(t2&&JSON.stringify(t2)!==prev&&!CP.pending){
-      TB.task=t2; tbClearCrewOnly(); tbSpawnCrew(t2); tbTaskPanel(t2);
-      if(t2.status==="done"&&!CP.seen[t2.id]){CP.seen[t2.id]=1; cpSaveSeen(); cpBadges();}
+if(!isSiteMode()){
+  setInterval(async ()=>{
+    if(document.hidden) return;
+    tbPollN++;
+    if(TB.level===0&&tbPollN%4!==0) return;
+    const prev=TB.task?JSON.stringify(TB.task):"";
+    if(!(await tbLoad())) return;
+    cpBadges();
+    if(TB.level===3&&TB.task){
+      const t2=(TB.board.tasks[TB.task.area]||[]).find(x=>x.id===TB.task.id);
+      if(t2&&JSON.stringify(t2)!==prev&&!CP.pending){
+        TB.task=t2; tbClearCrewOnly(); tbSpawnCrew(t2); tbTaskPanel(t2);
+        if(t2.status==="done"&&!CP.seen[t2.id]){CP.seen[t2.id]=1; cpSaveSeen(); cpBadges();}
+      }
     }
-  }
-},12000);
-tbLoad().then(()=>cpBadges()).catch(()=>{});
+  },12000);
+  tbLoad().then(()=>cpBadges()).catch(()=>{});
+}
 const SB_GROUPS=[["Voice","teal","Mic, turn-taking, speaker route."],["Models","gold","Which brain handles what."],["Credentials","pink","What Bradley may access. Never raw secrets."],["Integrations","blue","Connected services."],["Notifications","orange","How Bradley reaches you."],["Device policy","green","What devices Bradley may touch."]];
 function sbEnterSettings(){
   if(subOrbit) exitTeamOrbit();
@@ -4175,7 +4177,7 @@ document.querySelector("[data-side-chat]").addEventListener("click",()=>{
   popupSources.set(chat,$("askForm"));
   drawPopupTethers();
 });
-if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener){
+if(!isSiteMode()&&navigator.mediaDevices&&navigator.mediaDevices.addEventListener){
   navigator.mediaDevices.addEventListener("devicechange",()=>refreshMediaDevices().catch(()=>{}));
 }
 popupSources.set($("chatWindow"),$("askForm"));
