@@ -95,9 +95,9 @@
     if (!top || !title || !sub) return;
 
     top.classList.add("site-brand-lockup");
-    title.textContent = "BIG AV";
+    title.textContent = "Meet Bradley.";
     sub.innerHTML =
-      '<span class="site-headline">Take control of everything.<br>Without having to do anything.</span><span class="site-eyebrow">AV is IT · AI UX · UC</span>';
+      '<span class="site-headline">Agentic intelligence for intelligent environments.</span><span class="site-eyebrow">BIG AV · AV is IT · AI UX · UC</span>';
   }
 
   function refreshSiteGeometry() {
