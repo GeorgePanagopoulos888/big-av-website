@@ -67,7 +67,7 @@ const PHASE2_SPAWNS = [
 const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 const SPAWN_OUTPUT_LAG_SEC = IS_TOUCH_DEVICE ? 0.28 : 0.06;
 
-const BRADLEY_BUILD = "tight-glow-caption-13";
+const BRADLEY_BUILD = "filament-vibe-dark-14";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -684,7 +684,11 @@ function readVoiceAmplitude() {
 
 function applyVoiceAmp(amp) {
   const value = amp.toFixed(3);
+  const filament = Math.min(1, amp * 1.2 + 0.04).toFixed(3);
+  const jitter = (amp * 3.4).toFixed(3);
   bradleyCore?.style.setProperty("--voice-amp", value);
+  bradleyCore?.style.setProperty("--filament-glow", filament);
+  bradleyCore?.style.setProperty("--filament-jitter", jitter);
   liveSystem?.style.setProperty("--voice-amp", value);
   liveAtoms?.querySelectorAll(".live-node").forEach((node) => {
     node.style.setProperty("--voice-amp", value);
@@ -712,6 +716,8 @@ function stopGlow() {
   glowRaf = 0;
   glowSmooth = 0;
   applyVoiceAmp(0);
+  bradleyCore?.style.setProperty("--filament-glow", "0");
+  bradleyCore?.style.setProperty("--filament-jitter", "0");
 }
 
 function usedOrbitSlots() {
