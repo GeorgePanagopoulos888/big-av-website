@@ -38,7 +38,7 @@ const ALLOW_LIVE_TTS =
   location.protocol === "http:" &&
   (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
-const BRADLEY_BUILD = "site-show-38";
+const BRADLEY_BUILD = "site-show-39";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -1090,10 +1090,12 @@ function startGlow() {
         Math.abs(Math.sin(t * 6.4 + 0.8)) * 0.34 +
         Math.abs(Math.sin(t * 15.2 + 1.4)) * 0.18;
       glowSmooth = glowSmooth * 0.48 + w * 0.52;
+      const amp = Math.min(1, 0.25 + glowSmooth * 0.65);
       if (typeof speakAmp !== "undefined") {
         speakAmp = Math.min(1, 0.35 + glowSmooth * 0.55);
       }
-      if (typeof setCoreAmp === "function") setCoreAmp(Math.min(1, 0.25 + glowSmooth * 0.65));
+      if (typeof setCoreAmp === "function") setCoreAmp(amp);
+      applyVoiceAmp(amp);
     }
     glowRaf = requestAnimationFrame(loop);
   };
@@ -1109,6 +1111,7 @@ function stopGlow() {
   document.body.classList.remove("bradley-speaking", "speaking");
   if (!IS_TOUCH_DEVICE && typeof endSpeakingVisual === "function") endSpeakingVisual();
   if (typeof setCoreAmp === "function") setCoreAmp(0);
+  applyVoiceAmp(0);
 }
 
 function usedOrbitSlots() {

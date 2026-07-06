@@ -472,6 +472,16 @@ body.site-mode.show-running #dispatchOrbit .node {
     inset: -2px;
   }
 
+  body.site-mode.speaking .core::before,
+  body.site-mode.bradley-speaking .core::before {
+    border-color: rgba(255, 225, 162, 0.42);
+    background:
+      radial-gradient(circle, rgba(255, 188, 88, calc(0.22 + var(--voice-amp, 0) * 0.3)), rgba(216, 171, 69, 0.08) 58%, transparent 73%);
+    box-shadow:
+      0 0 calc(76px + var(--voice-amp, 0) * 92px) rgba(255, 188, 88, calc(0.42 + var(--voice-amp, 0) * 0.28)),
+      inset 0 0 54px rgba(255, 212, 132, calc(0.14 + var(--voice-amp, 0) * 0.2));
+  }
+
   body.site-mode .core img {
     width: 74%;
     height: 74%;
@@ -484,14 +494,36 @@ body.site-mode.show-running #dispatchOrbit .node {
   }
 
   body.site-mode #demoAtoms .live-node {
-    --site-atom-scale: 0.5;
+    --site-atom-scale: 0.64;
+    width: 52px;
+    height: 64px;
+    margin: -32px 0 0 -26px;
     filter: saturate(0.95);
   }
 
+  body.site-mode #demoAtoms .live-node .disc {
+    top: 21px;
+    width: 44px;
+    height: 35px;
+    margin: -17.5px 0 0 -22px;
+    filter: drop-shadow(0 0 9px rgba(var(--node-rgb), 0.32)) drop-shadow(0 0 18px rgba(var(--node-rgb), 0.16));
+  }
+
+  body.site-mode #demoAtoms .live-node .disc::before,
+  body.site-mode #demoAtoms .live-node .disc::after,
+  body.site-mode #demoAtoms .live-node::before {
+    top: 21px;
+    width: 44px;
+    height: 16px;
+    margin: -8px 0 0 -22px;
+    box-shadow: 0 0 8px rgba(var(--node-rgb), 0.3), inset 0 0 6px rgba(var(--node-rgb), 0.16);
+  }
+
   body.site-mode #demoAtoms .live-node .label {
-    min-width: 126px;
-    font-size: 8.8px;
-    letter-spacing: 0.13em;
+    top: 47px;
+    min-width: 104px;
+    font-size: 7.5px;
+    letter-spacing: 0.12em;
   }
 
   body.site-mode .tabs {
