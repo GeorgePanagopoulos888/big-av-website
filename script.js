@@ -67,7 +67,7 @@ const PHASE2_SPAWNS = [
 const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 const SPAWN_OUTPUT_LAG_SEC = IS_TOUCH_DEVICE ? 0.28 : 0.06;
 
-const BRADLEY_BUILD = "lights-slot-top-12";
+const BRADLEY_BUILD = "tight-glow-caption-13";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -122,7 +122,7 @@ const BRADLEY_SCRIPT = [
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
       { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.38, slot: 2 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.42, slot: 3, lagSec: 0.1 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.42, slot: 0, lagSec: 0.1 },
     ],
   },
   {
@@ -676,8 +676,10 @@ function readVoiceAmplitude() {
   const end = Math.min(36, bins.length);
   for (let i = start; i < end; i += 1) sum += bins[i];
   const raw = sum / ((end - start) * 255);
-  glowSmooth = glowSmooth * 0.68 + raw * 0.32;
-  return Math.min(1, Math.max(0, glowSmooth * 1.42 + 0.06));
+  const peak = Math.max(...bins.slice(start, end)) / 255;
+  const blend = raw * 0.62 + peak * 0.38;
+  glowSmooth = glowSmooth * 0.52 + blend * 0.48;
+  return Math.min(1, Math.max(0, glowSmooth * 1.72 + 0.1));
 }
 
 function applyVoiceAmp(amp) {

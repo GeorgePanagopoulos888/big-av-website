@@ -193,16 +193,48 @@ a {
   color: transparent;
 }
 
-.live-line {
+.live-line,
+.live-caption {
   max-width: 40rem;
-  margin: -0.35rem auto 1.1rem;
   font-size: 1.08rem;
-  line-height: 1.5;
+  line-height: 1.55;
+  color: var(--gold2);
+}
+
+.live-line {
+  margin: -0.35rem auto 1.1rem;
   color: var(--text);
 }
 
-.live-line[hidden] {
+.live-caption {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(0.75rem, 4vw, 1.75rem);
+  z-index: 8;
+  width: min(92%, 36rem);
+  margin: 0;
+  padding: 1rem 1.25rem 1.15rem;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: clamp(0.98rem, 2.6vw, 1.14rem);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.92);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(2, 3, 3, 0.55) 28%,
+    rgba(2, 3, 3, 0.88) 100%
+  );
+  border-radius: 1rem;
+  pointer-events: none;
+}
+
+.live-line[hidden],
+.live-caption[hidden] {
   display: none;
+}
+
+body.bradley-speaking .live-caption:not([hidden]) {
+  display: block;
 }
 
 .live-summary {
@@ -243,7 +275,43 @@ a {
   min-height: min(72vh, 640px);
   display: grid;
   place-items: center;
-  overflow: hidden;
+  overflow: visible;
+  padding: 1.5rem 0 2.5rem;
+}
+
+.live-stage-wrap::before {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: -1.5rem;
+  height: 42%;
+  pointer-events: none;
+  z-index: 6;
+  background: linear-gradient(
+    to bottom,
+    var(--bg) 0%,
+    rgba(2, 3, 3, 0.94) 22%,
+    rgba(2, 3, 3, 0.45) 55%,
+    transparent 100%
+  );
+}
+
+.live-stage-wrap::after {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 0;
+  height: 38%;
+  pointer-events: none;
+  z-index: 6;
+  background: linear-gradient(
+    to top,
+    var(--bg) 0%,
+    rgba(2, 3, 3, 0.82) 30%,
+    transparent 100%
+  );
 }
 
 .live-system {
@@ -302,76 +370,84 @@ a {
 .core::before {
   content: "";
   position: absolute;
-  inset: -25px;
+  inset: -8px;
   border-radius: 50%;
   z-index: 0;
-  border: 1px solid rgba(var(--core-rgb), calc(0.22 + var(--voice-amp) * 0.5));
+  border: 1px solid rgba(var(--core-rgb), calc(0.28 + var(--voice-amp) * 0.55));
   background: radial-gradient(
     circle,
-    rgba(var(--core-rgb), calc(0.12 + var(--voice-amp) * 0.22)),
-    rgba(var(--core-rgb), 0.025) 58%,
-    transparent 72%
+    rgba(var(--core-rgb), calc(0.32 + var(--voice-amp) * 0.42)),
+    rgba(var(--core-rgb), calc(0.1 + var(--voice-amp) * 0.16)) 38%,
+    rgba(var(--core-rgb), 0.03) 52%,
+    transparent 58%
   );
   box-shadow:
-    0 0 calc(140px + var(--voice-amp) * 130px) rgba(var(--core-rgb), calc(0.3 + var(--voice-amp) * 0.45)),
-    inset 0 0 74px rgba(var(--core-rgb), calc(0.05 + var(--voice-amp) * 0.16));
+    0 0 calc(36px + var(--voice-amp) * 42px) rgba(var(--core-rgb), calc(0.62 + var(--voice-amp) * 0.38)),
+    inset 0 0 calc(28px + var(--voice-amp) * 32px) rgba(var(--core-rgb), calc(0.12 + var(--voice-amp) * 0.28));
+  transition: box-shadow 0.08s ease-out, background 0.08s ease-out;
 }
 
 .core::after {
   content: "";
   position: absolute;
-  inset: 18%;
+  inset: 22%;
   border-radius: 50%;
   z-index: 1;
   background: radial-gradient(
     circle,
-    rgba(255, 194, 80, calc(0.18 + var(--voice-amp) * 0.32)),
-    transparent 68%
+    rgba(255, 210, 96, calc(0.34 + var(--voice-amp) * 0.52)),
+    rgba(255, 181, 64, calc(0.08 + var(--voice-amp) * 0.18)) 45%,
+    transparent 62%
   );
-  filter: blur(10px);
-  opacity: calc(0.58 + var(--voice-amp) * 0.24);
+  filter: blur(8px);
+  opacity: calc(0.72 + var(--voice-amp) * 0.28);
+  transition: opacity 0.08s ease-out;
+}
+
+.core-bulb {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 78%;
+}
+
+.core-bulb::after {
+  content: "";
+  position: absolute;
+  left: 30%;
+  right: 30%;
+  top: 24%;
+  bottom: 42%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 58%,
+    rgba(255, 236, 168, calc(0.22 + var(--voice-amp) * 0.78)),
+    rgba(255, 196, 72, calc(0.08 + var(--voice-amp) * 0.35)) 52%,
+    transparent 72%
+  );
+  filter: blur(calc(4px + var(--voice-amp) * 3px));
+  mix-blend-mode: screen;
+  transition: filter 0.08s ease-out, opacity 0.08s ease-out;
 }
 
 .core img {
   position: relative;
-  z-index: 2;
-  width: 78%;
+  z-index: 1;
+  width: 100%;
   height: auto;
   object-fit: contain;
   border-radius: 22%;
   background: transparent;
-  filter: drop-shadow(0 0 calc(28px + var(--voice-amp) * 60px) rgba(255, 181, 64, calc(0.45 + var(--voice-amp) * 0.4)));
-  animation: corePulse 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 calc(10px + var(--voice-amp) * 18px) rgba(255, 181, 64, calc(0.42 + var(--voice-amp) * 0.5)));
+  animation: none;
+  transform: none;
+  transition: filter 0.08s ease-out;
 }
 
 body.bradley-speaking .core img {
-  animation: none;
-  transform: scale(calc(1.01 + var(--voice-amp) * 0.07));
-  transition: transform 0.1s ease-out, filter 0.1s ease-out;
-}
-
-@keyframes corePulse {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 22px rgba(255, 181, 64, 0.38));
-  }
-
-  50% {
-    transform: scale(1.035);
-    filter: drop-shadow(0 0 52px rgba(255, 199, 92, 0.78));
-  }
-}
-
-@keyframes coreSpeak {
-  0%,
-  100% {
-    transform: scale(1.01);
-  }
-
-  50% {
-    transform: scale(1.06);
-  }
+  transform: none;
 }
 
 .live-atoms {
@@ -426,11 +502,10 @@ body.bradley-speaking .core img {
 
 .live-node[data-id="lights"] .disc {
   filter:
-    drop-shadow(0 0 calc(12px + var(--voice-amp) * 34px) rgba(var(--node-rgb), calc(0.45 + var(--voice-amp) * 0.5)))
-    drop-shadow(0 0 calc(28px + var(--voice-amp) * 52px) rgba(var(--node-rgb), calc(0.28 + var(--voice-amp) * 0.42)))
-    drop-shadow(0 0 calc(52px + var(--voice-amp) * 72px) rgba(var(--node-rgb), calc(0.12 + var(--voice-amp) * 0.3)));
-  transform: scale(calc(1 + var(--voice-amp) * 0.12));
-  transition: transform 0.12s ease-out, filter 0.12s ease-out;
+    drop-shadow(0 0 calc(10px + var(--voice-amp) * 22px) rgba(var(--node-rgb), calc(0.55 + var(--voice-amp) * 0.45)))
+    drop-shadow(0 0 calc(20px + var(--voice-amp) * 28px) rgba(var(--node-rgb), calc(0.32 + var(--voice-amp) * 0.38)));
+  transform: scale(calc(1 + var(--voice-amp) * 0.08));
+  transition: transform 0.1s ease-out, filter 0.1s ease-out;
 }
 
 .live-node[data-id="lights"].live-node--ready .label {
@@ -1442,7 +1517,11 @@ li {
     scroll-behavior: auto;
   }
 
-  .core img {
+  .core img,
+  .core-bulb::after,
+  .core::before,
+  .core::after {
     animation: none;
+    transition: none;
   }
 }
