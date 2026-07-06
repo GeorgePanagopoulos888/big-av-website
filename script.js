@@ -64,7 +64,7 @@ const PHASE2_SPAWNS = [
   { id: "approvals", label: "Approvals", rgb: "194,140,255" },
 ];
 
-const BRADLEY_BUILD = "mobile-nav-lights-pass-7";
+const BRADLEY_BUILD = "playback-anchored-spawns-8";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -116,8 +116,8 @@ const BRADLEY_SCRIPT = [
     line: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
-      { id: "coffee", label: "Coffee", rgb: "255,191,105", at: 0.22, slot: 2 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", at: 0.34, slot: 8 },
+      { id: "coffee", label: "Coffee", rgb: "255,191,105", at: 0.28, slot: 2 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", at: 0.46, slot: 8 },
     ],
   },
   {
@@ -324,8 +324,15 @@ function spawnPhase2Orbit(atoms = PHASE2_SPAWNS) {
 
 function scheduleSpawnCues(spawnList, durationSec) {
   if (!spawnList?.length || !durationSec) return;
-  spawnList.forEach((atom) => {
-    const delayMs = Math.max(0, (atom.at ?? 0) * durationSec * 1000);
+
+  const sorted = [...spawnList].sort((a, b) => (a.at ?? 0) - (b.at ?? 0));
+  let lastDelayMs = 0;
+
+  sorted.forEach((atom) => {
+    let delayMs = Math.max(0, (atom.at ?? 0) * durationSec * 1000);
+    delayMs = Math.max(delayMs, lastDelayMs + 420);
+    lastDelayMs = delayMs;
+
     const timer = window.setTimeout(() => {
       if (showRunning) spawnAtom(atom);
     }, delayMs);
@@ -355,9 +362,16 @@ function waitAudioMeta(audio) {
   });
 }
 
-async function playAudioOnly(audio) {
+async function playAudioOnly(audio, { onStart } = {}) {
   pauseCurrentAudio();
   currentAudio = audio;
+  let started = false;
+
+  const fireStart = () => {
+    if (started) return;
+    started = true;
+    onStart?.();
+  };
 
   const tryPlay = () =>
     new Promise((resolve, reject) => {
@@ -369,7 +383,10 @@ async function playAudioOnly(audio) {
         currentAudio = null;
         reject(new Error("playback failed"));
       };
-      audio.play().catch(reject);
+      audio
+        .play()
+        .then(fireStart)
+        .catch(reject);
     });
 
   try {
@@ -393,10 +410,17 @@ async function loadBakedParts(beat) {
   return loaded;
 }
 
-function totalBeatDuration(audios, pauseMs) {
-  const audioSec = audios.reduce((sum, audio) => sum + (audio.duration || 0), 0);
+function totalBeatDuration(audios, pauseMs, beat) {
+  const audioSec = audios.reduce(
+    (sum, audio) => sum + (Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0),
+    0
+  );
   const gaps = Math.max(0, audios.length - 1) * (pauseMs / 1000);
-  return audioSec + gaps;
+  const measured = audioSec + gaps;
+  if (measured >= 1.5) return measured;
+
+  const text = beat ? beatSpeakParts(beat).join(" ") : "";
+  return Math.max(measured, Math.max(3.8, text.length * 0.058));
 }
 
 async function runOrbitSwap(beat) {
@@ -410,37 +434,42 @@ async function runOrbitSwap(beat) {
 async function playBeatAudio(audios, beat) {
   clearSpawnTimers();
   const pauseMs = beat.partPauseMs ?? 0;
-  const totalSec = totalBeatDuration(audios, pauseMs);
-
-  if (beat.spawn?.length) scheduleSpawnCues(beat.spawn, totalSec);
+  const totalSec = totalBeatDuration(audios, pauseMs, beat);
 
   startGlow();
 
   let orbitSwapPromise = null;
   let orbitSwapTimer = null;
+  let playbackAnchored = false;
+
+  const anchorPlayback = () => {
+    if (playbackAnchored) return;
+    playbackAnchored = true;
+
+    if (beat.spawn?.length) scheduleSpawnCues(beat.spawn, totalSec);
+
+    if (Number.isFinite(beat.orbitSwapAt)) {
+      const maxMs = Math.max(0, totalSec * 1000 - 100);
+      const delayMs = Math.min(beat.orbitSwapAt * 1000, maxMs);
+      orbitSwapTimer = window.setTimeout(fireOrbitSwap, delayMs);
+      spawnTimers.push(orbitSwapTimer);
+    }
+  };
 
   const fireOrbitSwap = () => {
     if (!showRunning || orbitSwapPromise) return;
     orbitSwapPromise = runOrbitSwap(beat);
   };
 
-  // Optional absolute timing fallback, in seconds from beat start.
-  if (Number.isFinite(beat.orbitSwapAt)) {
-    const maxMs = Math.max(0, totalSec * 1000 - 100);
-    const delayMs = Math.min(beat.orbitSwapAt * 1000, maxMs);
-
-    orbitSwapTimer = window.setTimeout(fireOrbitSwap, delayMs);
-    spawnTimers.push(orbitSwapTimer);
-  }
-
   for (let i = 0; i < audios.length; i += 1) {
     if (i > 0 && pauseMs) await new Promise((r) => setTimeout(r, pauseMs));
     if (!showRunning) break;
 
     const shouldSwapOnPart = beat.orbitSwapOnPart === i || beat.orbitResetOnPart === i;
+    const onStart = i === 0 ? anchorPlayback : undefined;
 
     if (shouldSwapOnPart) {
-      const audioDone = playAudioOnly(audios[i]);
+      const audioDone = playAudioOnly(audios[i], { onStart });
       const delayMs = Math.max(0, beat.orbitSwapDelayMs ?? 0);
 
       if (delayMs) {
@@ -454,7 +483,7 @@ async function playBeatAudio(audios, beat) {
       continue;
     }
 
-    await playAudioOnly(audios[i]);
+    await playAudioOnly(audios[i], { onStart });
   }
 
   if (orbitSwapTimer) window.clearTimeout(orbitSwapTimer);
@@ -500,7 +529,8 @@ async function speakBradley(beat) {
     return true;
   } catch {
     setVoiceStatus("Voice unavailable — captions only", true);
-    const captionDuration = Math.max(5, fullText.length * 0.055);
+    const captionDuration = Math.max(5, fullText.length * 0.058);
+    await new Promise((r) => setTimeout(r, 280));
     scheduleSpawnCues(beat.spawn, captionDuration);
 
     if (beat.phase2Spawns?.length) {
