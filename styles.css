@@ -345,7 +345,9 @@ a {
 }
 
 body.bradley-speaking .core img {
-  animation: coreSpeak 0.95s ease-in-out infinite;
+  animation: none;
+  transform: scale(calc(1.01 + var(--voice-amp) * 0.07));
+  transition: transform 0.1s ease-out, filter 0.1s ease-out;
 }
 
 @keyframes corePulse {
@@ -381,6 +383,7 @@ body.bradley-speaking .core img {
 
 .live-node {
   --node-rgb: 216, 171, 69;
+  --voice-amp: 0;
   position: absolute;
   width: 68px;
   height: 82px;
@@ -423,31 +426,39 @@ body.bradley-speaking .core img {
 
 .live-node[data-id="lights"] .disc {
   filter:
-    drop-shadow(0 0 16px rgba(var(--node-rgb), 0.72))
-    drop-shadow(0 0 36px rgba(var(--node-rgb), 0.48))
-    drop-shadow(0 0 64px rgba(var(--node-rgb), 0.28));
-  animation: lightsPulse 2.4s ease-in-out infinite;
+    drop-shadow(0 0 calc(12px + var(--voice-amp) * 34px) rgba(var(--node-rgb), calc(0.45 + var(--voice-amp) * 0.5)))
+    drop-shadow(0 0 calc(28px + var(--voice-amp) * 52px) rgba(var(--node-rgb), calc(0.28 + var(--voice-amp) * 0.42)))
+    drop-shadow(0 0 calc(52px + var(--voice-amp) * 72px) rgba(var(--node-rgb), calc(0.12 + var(--voice-amp) * 0.3)));
+  transform: scale(calc(1 + var(--voice-amp) * 0.12));
+  transition: transform 0.12s ease-out, filter 0.12s ease-out;
 }
 
 .live-node[data-id="lights"].live-node--ready .label {
   color: #fff3c4;
-  text-shadow: 0 0 18px rgba(255, 227, 95, 0.55);
+  text-shadow: 0 0 calc(12px + var(--voice-amp) * 28px) rgba(255, 227, 95, calc(0.35 + var(--voice-amp) * 0.55));
 }
 
-@keyframes lightsPulse {
-  0%,
-  100% {
-    transform: scale(1);
+.live-node[data-id="lights"].live-node--lights-hit .disc {
+  animation: lightsHit 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes lightsHit {
+  0% {
+    transform: scale(0.72);
     filter:
-      drop-shadow(0 0 14px rgba(var(--node-rgb), 0.62))
-      drop-shadow(0 0 32px rgba(var(--node-rgb), 0.4));
+      drop-shadow(0 0 8px rgba(var(--node-rgb), 0.35))
+      drop-shadow(0 0 18px rgba(var(--node-rgb), 0.2));
   }
 
-  50% {
-    transform: scale(1.08);
+  45% {
+    transform: scale(calc(1.18 + var(--voice-amp) * 0.1));
     filter:
-      drop-shadow(0 0 22px rgba(var(--node-rgb), 0.88))
-      drop-shadow(0 0 48px rgba(var(--node-rgb), 0.58));
+      drop-shadow(0 0 calc(24px + var(--voice-amp) * 40px) rgba(var(--node-rgb), 0.95))
+      drop-shadow(0 0 calc(48px + var(--voice-amp) * 64px) rgba(var(--node-rgb), 0.72));
+  }
+
+  100% {
+    transform: scale(calc(1 + var(--voice-amp) * 0.12));
   }
 }
 

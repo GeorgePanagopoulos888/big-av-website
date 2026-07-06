@@ -65,9 +65,9 @@ const PHASE2_SPAWNS = [
 ];
 
 const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-const SPAWN_OUTPUT_LAG_SEC = IS_TOUCH_DEVICE ? 0.34 : 0.06;
+const SPAWN_OUTPUT_LAG_SEC = IS_TOUCH_DEVICE ? 0.28 : 0.06;
 
-const BRADLEY_BUILD = "audio-clock-spawns-10";
+const BRADLEY_BUILD = "audio-reactive-glow-11";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -121,8 +121,8 @@ const BRADLEY_SCRIPT = [
     line: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
-      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.15, slot: 2 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.25, slot: 8 },
+      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.38, slot: 2 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.38, slot: 8 },
     ],
   },
   {
@@ -213,7 +213,11 @@ const signupEmail = document.getElementById("signup-email");
 const voiceStatus = document.getElementById("voice-status");
 
 let showRunning = false;
-let glowTimer = null;
+let glowRaf = 0;
+let glowSmooth = 0;
+let bradleyAudioCtx = null;
+let bradleyAnalyser = null;
+const bradleyAudioSources = new WeakMap();
 let currentAudio = null;
 let spawnTimers = [];
 let spawnRaf = 0;
@@ -340,7 +344,8 @@ function resolveSpawnSec(atom, audios, pauseMs, beat) {
     const totalSec = totalBeatDuration(audios, pauseMs, beat);
     sec = Math.max(0.35, (atom.at ?? 0) * totalSec);
   }
-  return sec + SPAWN_OUTPUT_LAG_SEC;
+  const lag = Number.isFinite(atom.lagSec) ? atom.lagSec : SPAWN_OUTPUT_LAG_SEC;
+  return sec + lag;
 }
 
 function createSpawnWatcher(spawnList, audios, pauseMs, beat) {
@@ -452,9 +457,41 @@ function waitAudioMeta(audio) {
   });
 }
 
+function ensureBradleyAudioGraph() {
+  if (!bradleyAudioCtx) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    bradleyAudioCtx = new Ctx();
+    bradleyAnalyser = bradleyAudioCtx.createAnalyser();
+    bradleyAnalyser.fftSize = 512;
+    bradleyAnalyser.smoothingTimeConstant = 0.55;
+    bradleyAnalyser.minDecibels = -82;
+    bradleyAnalyser.maxDecibels = -18;
+    bradleyAnalyser.connect(bradleyAudioCtx.destination);
+  }
+  if (bradleyAudioCtx.state === "suspended") {
+    bradleyAudioCtx.resume().catch(() => {});
+  }
+  return bradleyAnalyser;
+}
+
+function bindAudioAnalyser(audio) {
+  if (!audio || bradleyAudioSources.has(audio)) return;
+  const analyser = ensureBradleyAudioGraph();
+  if (!analyser || !bradleyAudioCtx) return;
+  try {
+    const source = bradleyAudioCtx.createMediaElementSource(audio);
+    source.connect(analyser);
+    bradleyAudioSources.set(audio, source);
+  } catch {
+    /* element may already be wired in this session */
+  }
+}
+
 async function playAudioOnly(audio) {
   pauseCurrentAudio();
   currentAudio = audio;
+  bindAudioAnalyser(audio);
 
   const tryPlay = () =>
     new Promise((resolve, reject) => {
@@ -630,23 +667,49 @@ async function speakBradley(beat) {
   }
 }
 
+function readVoiceAmplitude() {
+  if (!bradleyAnalyser) return 0;
+  const bins = new Uint8Array(bradleyAnalyser.frequencyBinCount);
+  bradleyAnalyser.getByteFrequencyData(bins);
+  let sum = 0;
+  const start = 2;
+  const end = Math.min(36, bins.length);
+  for (let i = start; i < end; i += 1) sum += bins[i];
+  const raw = sum / ((end - start) * 255);
+  glowSmooth = glowSmooth * 0.68 + raw * 0.32;
+  return Math.min(1, Math.max(0, glowSmooth * 1.42 + 0.06));
+}
+
+function applyVoiceAmp(amp) {
+  const value = amp.toFixed(3);
+  bradleyCore?.style.setProperty("--voice-amp", value);
+  liveSystem?.style.setProperty("--voice-amp", value);
+  liveAtoms?.querySelectorAll(".live-node").forEach((node) => {
+    node.style.setProperty("--voice-amp", value);
+  });
+}
+
 function startGlow() {
   document.body.classList.add("bradley-speaking");
-  if (!bradleyCore) return;
+  ensureBradleyAudioGraph();
+  glowSmooth = 0;
 
-  glowTimer = window.setInterval(() => {
-    const amp = 0.38 + Math.random() * 0.48;
-    bradleyCore.style.setProperty("--voice-amp", amp.toFixed(2));
-    liveSystem?.style.setProperty("--voice-amp", amp.toFixed(2));
-  }, 85);
+  const loop = () => {
+    const amp = bradleyAnalyser && currentAudio && !currentAudio.paused ? readVoiceAmplitude() : glowSmooth * 0.9;
+    applyVoiceAmp(amp);
+    glowRaf = requestAnimationFrame(loop);
+  };
+
+  if (glowRaf) cancelAnimationFrame(glowRaf);
+  glowRaf = requestAnimationFrame(loop);
 }
 
 function stopGlow() {
   document.body.classList.remove("bradley-speaking");
-  if (glowTimer) window.clearInterval(glowTimer);
-  glowTimer = null;
-  bradleyCore?.style.setProperty("--voice-amp", "0");
-  liveSystem?.style.setProperty("--voice-amp", "0");
+  if (glowRaf) cancelAnimationFrame(glowRaf);
+  glowRaf = 0;
+  glowSmooth = 0;
+  applyVoiceAmp(0);
 }
 
 function usedOrbitSlots() {
@@ -763,7 +826,10 @@ function spawnAtom({ id, label, rgb, slot: fixedSlot, spawnAngle, screenBias, av
   liveAtoms.appendChild(node);
   ensureOrbitMotion();
 
-  requestAnimationFrame(() => node.classList.add("live-node--ready"));
+  requestAnimationFrame(() => {
+    node.classList.add("live-node--ready");
+    if (id === "lights") node.classList.add("live-node--lights-hit");
+  });
 }
 
 function setCaption(text) {
@@ -838,6 +904,7 @@ if (startBtn) {
   startBtn.addEventListener("click", async () => {
     if (startBtn.textContent === "Run it again") resetShow();
     startBtn.disabled = true;
+    ensureBradleyAudioGraph();
     await preloadBradleyVoice();
     runBradleyShow();
   });
