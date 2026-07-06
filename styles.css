@@ -57,6 +57,7 @@ body {
 }
 
 body.bradley-speaking {
+  --core-rgb: 255, 190, 92;
   background: linear-gradient(180deg, #010101 0%, #000000 100%);
 }
 
@@ -177,6 +178,68 @@ a {
   background: transparent;
 }
 
+.bradley-live--orbit {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  padding: 0;
+  min-height: 100dvh;
+  border-bottom: 1px solid var(--line2);
+  background: #020303;
+  overflow: hidden;
+}
+
+.bradley-live--orbit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(216, 171, 69, 0.19), transparent 30%),
+    radial-gradient(circle at 78% 16%, rgba(255, 227, 162, 0.1), transparent 24%),
+    linear-gradient(135deg, #111719 0%, #070909 42%, #010101 100%);
+  z-index: 0;
+}
+
+.bradley-live--orbit .live-stage-wrap {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  padding: clamp(72px, 10vh, 96px) 0 max(120px, 14vh);
+}
+
+.bradley-live--orbit .live-signup {
+  position: relative;
+  z-index: 1;
+  max-width: 28rem;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+
+.live-stage-controls {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom, 18px));
+  transform: translateX(-50%);
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  width: min(92vw, 420px);
+}
+
+.live-stage-controls .voice-status {
+  margin: 0;
+}
+
+body:has(.bradley-live--orbit) .ribbon {
+  display: none;
+}
+
 .live-header {
   text-align: center;
   margin-bottom: 0.5rem;
@@ -215,7 +278,7 @@ a {
 .live-caption {
   position: absolute;
   left: 50%;
-  bottom: clamp(0.75rem, 4vw, 1.75rem);
+  bottom: clamp(5.5rem, 14vh, 7.5rem);
   z-index: 8;
   width: min(92%, 36rem);
   margin: 0;
@@ -311,27 +374,177 @@ body.bradley-speaking .live-caption:not([hidden]) {
 }
 
 .live-system::before {
-  content: none;
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(520px, 96vw);
+  height: min(520px, 96vw);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    circle,
+    rgba(255, 176, 72, calc(0.5 * var(--bulb-b))) 0%,
+    rgba(255, 150, 52, calc(0.14 * var(--bulb-b))) 45%,
+    rgba(190, 150, 70, calc(0.05 * var(--bulb-b))) 62%,
+    transparent 78%
+  );
+  filter: blur(calc(18px + var(--bulb-b) * 22px));
+  opacity: calc(0.55 + var(--bulb-b) * 0.45);
+  transition: opacity 0.12s ease-out, filter 0.12s ease-out;
+}
+
+.live-system .orbit-line {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 200, 94, 0.15);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.live-system .orbit-line.l1 {
+  width: 88%;
+  height: 34%;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  opacity: 0.72;
+}
+
+.live-system .orbit-line.l2 {
+  width: 76%;
+  height: 40%;
+  transform: translate(-50%, -50%) rotate(28deg);
+  border-color: rgba(132, 200, 255, 0.22);
+}
+
+.live-system .orbit-line.l3 {
+  width: 64%;
+  height: 46%;
+  transform: translate(-50%, -50%) rotate(73deg);
+  border-color: rgba(85, 240, 216, 0.2);
+  opacity: 0.34;
+}
+
+.live-system .orbit-line.l4 {
+  width: 78%;
+  height: 28%;
+  transform: translate(-50%, -50%) rotate(116deg);
+  border-color: rgba(132, 200, 255, 0.2);
+  opacity: 0.32;
+}
+
+.live-system .orbit-line.l5 {
+  width: 76%;
+  height: 38%;
+  transform: translate(-50%, -50%) rotate(54deg);
+  border-color: rgba(213, 97, 255, 0.18);
+  opacity: 0.3;
+}
+
+.live-system .orbit-line.l6 {
+  width: 90%;
+  height: 26%;
+  transform: translate(-50%, -50%) rotate(143deg);
+  border-color: rgba(255, 123, 61, 0.18);
+  opacity: 0.27;
+}
+
+.live-system .orbit-line.l7 {
+  width: 73%;
+  height: 40%;
+  transform: translate(-50%, -50%) rotate(-46deg);
+  border-color: rgba(255, 227, 95, 0.18);
+  opacity: 0.26;
+}
+
+.live-system .orbit-line.l8 {
+  width: 66%;
+  height: 24%;
+  transform: translate(-50%, -50%) rotate(96deg);
+  border-color: rgba(244, 240, 223, 0.16);
+  opacity: 0.22;
 }
 
 .core {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: min(48vh, 72vw);
-  max-width: 520px;
+  width: min(420px, 72vw);
+  height: min(420px, 72vw);
   transform: translate(-50%, -50%);
-  z-index: 2;
+  z-index: 3;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
   pointer-events: none;
 }
 
+.core::before {
+  content: "";
+  position: absolute;
+  inset: -6%;
+  border-radius: 50%;
+  z-index: 0;
+  border: 1px solid rgba(var(--core-rgb, 216, 171, 69), calc(0.22 + var(--voice-amp, 0) * 0.5));
+  background: radial-gradient(
+    circle,
+    rgba(var(--core-rgb, 216, 171, 69), calc(0.12 + var(--voice-amp, 0) * 0.22)),
+    rgba(var(--core-rgb, 216, 171, 69), 0.025) 58%,
+    transparent 72%
+  );
+  box-shadow:
+    0 0 calc(144px + var(--voice-amp, 0) * 110px) rgba(var(--core-rgb, 216, 171, 69), calc(0.25 + var(--voice-amp, 0) * 0.38)),
+    inset 0 0 74px rgba(var(--core-rgb, 216, 171, 69), calc(0.035 + var(--voice-amp, 0) * 0.12));
+}
+
+.core::after {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  z-index: 1;
+  background: radial-gradient(
+    circle,
+    rgba(var(--core-rgb, 255, 194, 80), calc(0.18 + var(--voice-amp, 0) * 0.32)),
+    transparent 68%
+  );
+  filter: blur(10px);
+  opacity: calc(0.58 + var(--voice-amp, 0) * 0.24);
+}
+
+.core-bulb {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 78%;
+}
+
+.filament-canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.45;
+  mix-blend-mode: screen;
+}
+
+.core img,
 #bradley-bulb-img {
-  display: block;
+  position: relative;
+  z-index: 3;
   width: 100%;
   height: auto;
+  object-fit: contain;
+  border-radius: 22%;
   background: transparent;
-  border-radius: 0;
-  filter: drop-shadow(0 0 18px rgba(255, 176, 72, 0.32));
+  filter: drop-shadow(0 0 18px rgba(255, 176, 72, 0.32)) brightness(0.95);
   will-change: filter;
 }
 
@@ -1402,6 +1615,8 @@ li {
     scroll-behavior: auto;
   }
 
+  .core img,
+  .filament-canvas,
   .stage-viz-canvas,
   #bradley-bulb-img {
     animation: none;

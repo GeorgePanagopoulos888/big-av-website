@@ -68,7 +68,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "bradley-app-shell-23";
+const BRADLEY_BUILD = "orbit-dashboard-24";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -203,12 +203,22 @@ const BRADLEY_SCRIPT = [
   },
 ];
 
-const liveAtoms = null;
-const bradleyTranscript = document.getElementById("transcript");
+const liveSystem = document.getElementById("live-system");
+const bradleyCore = document.getElementById("bradley-core");
+const bradleyBulbImg = document.getElementById("bradley-bulb-img");
+const stageVizCanvas = document.getElementById("stage-viz-canvas");
+const filamentCanvas = document.getElementById("filament-canvas");
+const speechVizData = new Float32Array(1024);
+let stageVizCtx = null;
+let filamentCtx = null;
+let idleBulbRaf = 0;
+const liveAtoms = document.getElementById("live-atoms");
+const bradleyLine = document.getElementById("bradley-line");
+const liveTitle = document.getElementById("live-title");
 const startBtn = document.getElementById("bradley-start");
-const skipBtn = null;
-const signupForm = null;
-const signupEmail = null;
+const skipBtn = document.getElementById("bradley-skip");
+const signupForm = document.getElementById("bradley-signup");
+const signupEmail = document.getElementById("signup-email");
 const voiceStatus = document.getElementById("voice-status");
 
 let showRunning = false;
@@ -713,14 +723,260 @@ function updateSpeechViz() {
   return speechVizData;
 }
 
+function bulbBreathLevel(amp = 0, hot = false) {
+  const breath = (Math.sin(Date.now() / 2100) + 1) / 2;
+  if (hot) return Math.min(1, 0.68 + breath * 0.18 + amp * 0.12);
+  return 0.07 + breath * 0.07;
+}
+
+function resizeStageVizCanvas() {
+  if (!stageVizCanvas || !liveSystem) return;
+  const rect = liveSystem.getBoundingClientRect();
+  const w = Math.max(280, Math.round(rect.width));
+  const h = Math.max(280, Math.round(rect.height));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pw = Math.round(w * dpr);
+  const ph = Math.round(h * dpr);
+  if (stageVizCanvas.width !== pw || stageVizCanvas.height !== ph) {
+    stageVizCanvas.width = pw;
+    stageVizCanvas.height = ph;
+    stageVizCtx = stageVizCanvas.getContext("2d");
+    if (stageVizCtx) stageVizCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+}
+
+function resizeFilamentCanvas() {
+  if (!filamentCanvas || !bradleyCore) return;
+  const rect = bradleyCore.getBoundingClientRect();
+  const size = Math.max(180, Math.round(rect.width * 0.78));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const px = Math.round(size * dpr);
+  if (filamentCanvas.width !== px || filamentCanvas.height !== px) {
+    filamentCanvas.width = px;
+    filamentCanvas.height = px;
+    filamentCtx = filamentCanvas.getContext("2d");
+    if (filamentCtx) filamentCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  filamentCanvas.style.width = `${size}px`;
+  filamentCanvas.style.height = `${size}px`;
+}
+
+function bradleyCoreCenter() {
+  if (!bradleyCore || !liveSystem) return { x: 0, y: 0 };
+  const stage = liveSystem.getBoundingClientRect();
+  const core = bradleyCore.getBoundingClientRect();
+  return {
+    x: core.left - stage.left + core.width / 2,
+    y: core.top - stage.top + core.height / 2,
+  };
+}
+
+function drawBradleyStageGlow(cx, cy, stageW, stageH, b, hot) {
+  if (!stageVizCtx) return;
+  const R = Math.min(stageW, stageH) * 0.165;
+  const gr = stageVizCtx.createRadialGradient(cx, cy, R * 0.3, cx, cy, Math.max(stageW, stageH) * 0.95);
+  if (hot) {
+    gr.addColorStop(0, `rgba(255,176,72,${0.5 * b})`);
+    gr.addColorStop(0.45, `rgba(255,150,52,${0.14 * b})`);
+    gr.addColorStop(1, "rgba(255,150,52,0)");
+  } else {
+    gr.addColorStop(0, `rgba(214,176,80,${0.16 * b + 0.05})`);
+    gr.addColorStop(0.5, `rgba(190,150,70,${0.05 * b})`);
+    gr.addColorStop(1, "rgba(190,150,70,0)");
+  }
+  stageVizCtx.fillStyle = gr;
+  stageVizCtx.fillRect(0, 0, stageW, stageH);
+}
+
+function drawBradleyVoiceWaves(cx, cy, hot, ampBase, layer = "all") {
+  if (!stageVizCtx || ampBase <= 0) return;
+  const t = performance.now() / 420;
+  const color = hot ? "255,190,92" : "132,200,255";
+  const scale = Math.min(1.15, (liveSystem?.clientWidth || 720) / 720);
+
+  if (layer === "all" || layer === "outer") {
+    for (let band = 0; band < 3; band += 1) {
+      const radius = (150 + band * 34 + Math.sin(t + band) * 6) * scale;
+      const amp = (18 + band * 7) * ampBase;
+      stageVizCtx.beginPath();
+      for (let i = 0; i <= 220; i += 1) {
+        const a = (Math.PI * 2 * i) / 220;
+        const wobble = Math.sin(a * 5 + t * 1.8 + band) * amp + Math.sin(a * 11 - t * 0.9) * amp * 0.38;
+        const rx = radius + wobble;
+        const ry = radius * 0.58 + wobble * 0.45;
+        const x = cx + Math.cos(a) * rx;
+        const y = cy + Math.sin(a) * ry;
+        if (i === 0) stageVizCtx.moveTo(x, y);
+        else stageVizCtx.lineTo(x, y);
+      }
+      stageVizCtx.closePath();
+      stageVizCtx.strokeStyle = `rgba(${color},${0.26 - band * 0.055})`;
+      stageVizCtx.lineWidth = 1.4;
+      stageVizCtx.shadowColor = `rgba(${color},0.38)`;
+      stageVizCtx.shadowBlur = 16;
+      stageVizCtx.stroke();
+    }
+  }
+
+  if (layer === "all" || layer === "inner") {
+    for (let band = 0; band < 2; band += 1) {
+      const radius = (70 + band * 18 + Math.sin(t * 1.7 + band) * 5) * scale;
+      stageVizCtx.beginPath();
+      for (let i = 0; i <= 120; i += 1) {
+        const a = (Math.PI * 2 * i) / 120;
+        const wobble = Math.sin(a * 7 + t * 3 + band) * 10 * ampBase;
+        const x = cx + Math.cos(a) * (radius + wobble);
+        const y = cy + Math.sin(a) * (radius * 0.72 + wobble * 0.35);
+        if (i === 0) stageVizCtx.moveTo(x, y);
+        else stageVizCtx.lineTo(x, y);
+      }
+      stageVizCtx.closePath();
+      stageVizCtx.strokeStyle = `rgba(${color},${0.34 - band * 0.1})`;
+      stageVizCtx.lineWidth = 1.2;
+      stageVizCtx.shadowColor = `rgba(${color},0.52)`;
+      stageVizCtx.shadowBlur = 20;
+      stageVizCtx.stroke();
+    }
+  }
+  stageVizCtx.shadowBlur = 0;
+}
+
+function drawBradleyStage(b, hot) {
+  resizeStageVizCanvas();
+  if (!stageVizCanvas || !stageVizCtx || !liveSystem) return;
+  const stageW = liveSystem.clientWidth;
+  const stageH = liveSystem.clientHeight;
+  const { x: cx, y: cy } = bradleyCoreCenter();
+  const ampBase = hot ? 0.16 + b * 0.08 : 0.06 + b * 0.1;
+  stageVizCtx.clearRect(0, 0, stageW, stageH);
+  drawBradleyStageGlow(cx, cy, stageW, stageH, b, hot);
+
+  if (bradleyCore && ampBase > 0) {
+    const coreRect = bradleyCore.getBoundingClientRect();
+    const cutR = Math.max(coreRect.width, coreRect.height) * 0.34;
+    stageVizCtx.save();
+    stageVizCtx.beginPath();
+    stageVizCtx.rect(0, 0, stageW, stageH);
+    stageVizCtx.arc(cx, cy, cutR, 0, Math.PI * 2, true);
+    stageVizCtx.clip("evenodd");
+    drawBradleyVoiceWaves(cx, cy, hot, ampBase, "outer");
+    stageVizCtx.restore();
+    drawBradleyVoiceWaves(cx, cy, hot, ampBase, "inner");
+  } else if (ampBase > 0) {
+    drawBradleyVoiceWaves(cx, cy, hot, ampBase, "all");
+  }
+}
+
+function drawFilamentGlow(b, hot) {
+  resizeFilamentCanvas();
+  if (!filamentCanvas || !filamentCtx) return;
+  const size = filamentCanvas.clientWidth || filamentCanvas.width;
+  const cx = size / 2;
+  const cy = size / 2;
+  const R = size * 0.36;
+  filamentCtx.clearRect(0, 0, size, size);
+
+  const fy = cy + R * 0.74;
+  const topY = cy - R * 0.5;
+  const loops = 5;
+  const span = R * 0.82;
+  const x0 = cx - span / 2;
+  const step = span / loops;
+
+  filamentCtx.lineWidth = Math.max(1.6, R * 0.035);
+  filamentCtx.lineCap = "round";
+  filamentCtx.strokeStyle =
+    b > 0.25
+      ? `rgba(255,${150 + 90 * b | 0},${40 + 60 * b | 0},${Math.min(1, 0.55 + b).toFixed(2)})`
+      : "rgba(120,95,55,.5)";
+  if (b > 0.4) {
+    filamentCtx.shadowColor = `rgba(255,170,60,${b.toFixed(2)})`;
+    filamentCtx.shadowBlur = R * 0.35;
+  }
+  filamentCtx.beginPath();
+  filamentCtx.moveTo(x0 - R * 0.06, fy);
+  filamentCtx.lineTo(x0, fy);
+  for (let i = 0; i < loops; i += 1) {
+    const x = x0 + i * step;
+    filamentCtx.lineTo(x, fy);
+    filamentCtx.lineTo(x + step / 2, topY);
+    filamentCtx.lineTo(x + step, fy);
+  }
+  filamentCtx.lineTo(cx + span / 2 + R * 0.06, fy);
+  filamentCtx.stroke();
+  filamentCtx.shadowBlur = 0;
+
+  if (hot && b > 0.35) {
+    const glow = filamentCtx.createRadialGradient(cx, cy + R * 0.1, 0, cx, cy + R * 0.1, R * 0.55);
+    glow.addColorStop(0, `rgba(255,188,88,${(0.22 * b).toFixed(3)})`);
+    glow.addColorStop(1, "rgba(255,188,88,0)");
+    filamentCtx.fillStyle = glow;
+    filamentCtx.fillRect(0, 0, size, size);
+  }
+
+  filamentCanvas.style.opacity = String(Math.min(1, 0.42 + b * 0.58));
+}
+
+function applyBradleyBulbLook(b, hot) {
+  const img = bradleyBulbImg || bradleyCore?.querySelector("img");
+  if (img) {
+    img.style.filter = `drop-shadow(0 0 ${(14 + b * 48).toFixed(0)}px rgba(255,176,72,${(0.3 + b * 0.5).toFixed(2)})) brightness(${(0.92 + b * 0.45).toFixed(2)})`;
+  }
+  liveSystem?.style.setProperty("--bulb-b", b.toFixed(3));
+  liveSystem?.style.setProperty("--bulb-hot", hot ? "1" : "0");
+  drawBradleyStage(b, hot);
+  drawFilamentGlow(b, hot);
+}
+
+function applyVoiceAmp(amp) {
+  const value = amp.toFixed(3);
+  const speaking = document.body.classList.contains("bradley-speaking");
+  const hot = speaking;
+  const b = bulbBreathLevel(amp, hot);
+  applyBradleyBulbLook(b, hot);
+  bradleyCore?.style.setProperty("--voice-amp", value);
+  liveSystem?.style.setProperty("--voice-amp", value);
+  liveAtoms?.querySelectorAll(".live-node").forEach((node) => {
+    node.style.setProperty("--voice-amp", value);
+  });
+}
+
 function startGlow() {
   document.body.classList.add("bradley-speaking");
-  window.setBradleyAppSpeaking?.(true);
+  ensureBradleyAudioGraph();
+  glowSmooth = 0;
+
+  const loop = () => {
+    const amp =
+      currentAudio && !currentAudio.paused ? readVoiceAmplitude() : glowSmooth * 0.9;
+    applyVoiceAmp(amp);
+    glowRaf = requestAnimationFrame(loop);
+  };
+
+  if (glowRaf) cancelAnimationFrame(glowRaf);
+  glowRaf = requestAnimationFrame(loop);
 }
 
 function stopGlow() {
   document.body.classList.remove("bradley-speaking");
-  window.setBradleyAppSpeaking?.(false);
+  if (glowRaf) cancelAnimationFrame(glowRaf);
+  glowRaf = 0;
+  glowSmooth = 0;
+  applyBradleyBulbLook(bulbBreathLevel(0, false), false);
+  applyVoiceAmp(0);
+  startIdleBulbBreath();
+}
+
+function startIdleBulbBreath() {
+  if (idleBulbRaf) cancelAnimationFrame(idleBulbRaf);
+  const loop = () => {
+    if (!document.body.classList.contains("bradley-speaking")) {
+      const b = bulbBreathLevel(0, false);
+      applyBradleyBulbLook(b, false);
+    }
+    idleBulbRaf = requestAnimationFrame(loop);
+  };
+  idleBulbRaf = requestAnimationFrame(loop);
 }
 
 function usedOrbitSlots() {
@@ -844,19 +1100,15 @@ function spawnAtom({ id, label, rgb, slot: fixedSlot, spawnAngle, screenBias, av
 }
 
 function setCaption(text) {
-  if (!bradleyTranscript) return;
-  const copy = String(text || "").trim();
-  if (!copy) {
-    bradleyTranscript.innerHTML = "";
+  if (!bradleyLine) return;
+  const line = String(text || "").trim();
+  if (!line) {
+    bradleyLine.textContent = "";
+    bradleyLine.hidden = true;
     return;
   }
-  const row = document.createElement("div");
-  row.className = "bradley-line bradly";
-  row.innerHTML = '<span class="who">Bradley</span><span class="txt"></span>';
-  row.querySelector(".txt").textContent = copy;
-  bradleyTranscript.innerHTML = "";
-  bradleyTranscript.appendChild(row);
-  requestAnimationFrame(() => row.classList.add("show"));
+  bradleyLine.textContent = line;
+  bradleyLine.hidden = false;
 }
 
 async function runBradleyShow() {
@@ -877,6 +1129,7 @@ async function runBradleyShow() {
     await new Promise((r) => setTimeout(r, 720));
   }
 
+  if (signupForm) signupForm.hidden = false;
   if (startBtn) {
     startBtn.disabled = false;
     startBtn.textContent = "Run it again";
@@ -895,6 +1148,8 @@ function resetShow() {
   phase1SlotIdx = 0;
   spawned.clear();
   if (liveAtoms) liveAtoms.innerHTML = "";
+  if (signupForm) signupForm.hidden = true;
+  if (liveTitle) liveTitle.textContent = "Bradley";
   setCaption("");
   setVoiceStatus("Live demo");
   showRunning = false;
@@ -919,6 +1174,31 @@ if (startBtn) {
     ensureBradleyAudioGraph();
     await preloadBradleyVoice();
     runBradleyShow();
+  });
+}
+
+if (skipBtn) {
+  skipBtn.addEventListener("click", () => {
+    showRunning = false;
+    stopGlow();
+    stopAudio();
+    if (signupForm) signupForm.hidden = false;
+    setCaption("Leave your email — BIG AV will call for a consult.");
+    if (liveTitle) liveTitle.textContent = "Bradley";
+  });
+}
+
+if (signupForm && signupEmail) {
+  signupForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const email = signupEmail.value.trim();
+    if (!email) return;
+
+    const subject = encodeURIComponent("Bradley demo — consult request");
+    const body = encodeURIComponent(
+      `Hi BIG AV,\n\nI saw the Bradley website demo and want a consult.\n\nEmail: ${email}\n`
+    );
+    window.location.href = `mailto:bradley@big-av.com?subject=${subject}&body=${body}`;
   });
 }
 
@@ -947,4 +1227,10 @@ async function wireBookingsCta() {
 
 wireBookingsCta();
 setVoiceStatus("Live demo");
-window.initBradleyAppFrame?.();
+function resizeBradleyViz() {
+  resizeStageVizCanvas();
+  resizeFilamentCanvas();
+}
+resizeBradleyViz();
+startIdleBulbBreath();
+window.addEventListener("resize", resizeBradleyViz);
