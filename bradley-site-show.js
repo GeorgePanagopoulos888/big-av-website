@@ -31,8 +31,11 @@ const PHASE2_SPAWNS = [
 const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
+const ALLOW_LIVE_TTS =
+  location.protocol === "http:" &&
+  (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
-const BRADLEY_BUILD = "site-show-32";
+const BRADLEY_BUILD = "site-show-34";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -41,6 +44,7 @@ console.info("[Bradley] loaded", BRADLEY_BUILD, {
   touchDevice: IS_TOUCH_DEVICE,
   webAudioGlow: USE_WEB_AUDIO_GLOW,
   spawnLagSec: SPAWN_OUTPUT_LAG_SEC,
+  liveTts: ALLOW_LIVE_TTS,
 });
 
 window.__bradleyDebug = {
@@ -189,6 +193,8 @@ let glowSmooth = 0;
 let bradleyAudioCtx = null;
 let bradleyAnalyser = null;
 const bradleyAudioSources = new WeakMap();
+const bakedVoiceCache = new Map();
+let bakedVoiceWarmupPromise = null;
 let currentAudio = null;
 let spawnTimers = [];
 let spawnRaf = 0;
@@ -237,6 +243,23 @@ function pauseCurrentAudio() {
 function stopAudio() {
   clearSpawnTimers();
   pauseCurrentAudio();
+}
+
+function stopOrbitMotion() {
+  if (orbitRaf) cancelAnimationFrame(orbitRaf);
+  orbitRaf = 0;
+  orbitLastTs = 0;
+}
+
+function clearShowVisualState() {
+  stopGlow();
+  stopAudio();
+  stopOrbitMotion();
+  orbitPhase = 0;
+  orbitPeriodCurrent = ORBIT_PERIOD_S;
+  phase1SlotIdx = 0;
+  spawned.clear();
+  if (liveAtoms) liveAtoms.innerHTML = "";
 }
 
 function positionOnOrbit(node, slot, phaseRad = orbitPhase) {
@@ -457,6 +480,73 @@ function waitAudioMeta(audio) {
   });
 }
 
+function waitAudioPlayable(audio) {
+  return new Promise((resolve, reject) => {
+    if (audio.readyState >= 3) {
+      resolve(audio);
+      return;
+    }
+
+    let timer = 0;
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      audio.removeEventListener("canplaythrough", ready);
+      audio.removeEventListener("loadeddata", ready);
+      audio.removeEventListener("error", failed);
+    };
+    const ready = () => {
+      cleanup();
+      resolve(audio);
+    };
+    const failed = () => {
+      cleanup();
+      reject(new Error("audio preload failed"));
+    };
+
+    audio.addEventListener("canplaythrough", ready, { once: true });
+    audio.addEventListener("loadeddata", ready, { once: true });
+    audio.addEventListener("error", failed, { once: true });
+    timer = window.setTimeout(() => {
+      if (audio.readyState >= 2) ready();
+      else failed();
+    }, 7000);
+    audio.load();
+  });
+}
+
+function bakedVoiceAssets() {
+  return BRADLEY_SCRIPT.flatMap((beat) => {
+    const parts = beatSpeakParts(beat);
+    return parts.map((_, index) => bakedVoicePath(beat.id, index, parts.length));
+  });
+}
+
+async function loadCachedBakedAudio(path) {
+  const cached = bakedVoiceCache.get(path);
+  if (cached) return cached.promise;
+
+  const audio = new Audio();
+  const promise = (async () => {
+    if (location.protocol === "http:" || location.protocol === "https:") {
+      const response = await fetch(path, { cache: "force-cache" });
+      if (!response.ok) throw new Error(`voice asset ${response.status}`);
+      const blob = await response.blob();
+      audio.src = URL.createObjectURL(blob);
+    } else {
+      audio.src = path;
+    }
+    audio.preload = "auto";
+    return waitAudioPlayable(audio);
+  })()
+    .then(() => audio)
+    .catch((error) => {
+      bakedVoiceCache.delete(path);
+      throw error;
+    });
+  bakedVoiceCache.set(path, { audio, promise });
+  return promise;
+}
+
 function ensureBradleyAudioGraph() {
   if (!USE_WEB_AUDIO_GLOW) return null;
   if (!bradleyAudioCtx) {
@@ -491,6 +581,12 @@ function bindAudioAnalyser(audio) {
 
 async function playAudioOnly(audio) {
   pauseCurrentAudio();
+  audio.pause();
+  try {
+    audio.currentTime = 0;
+  } catch {
+    /* Some browsers only allow seek after metadata is ready. */
+  }
   currentAudio = audio;
   bindAudioAnalyser(audio);
 
@@ -520,10 +616,7 @@ async function loadBakedParts(beat) {
   const parts = beatSpeakParts(beat);
   const loaded = [];
   for (let i = 0; i < parts.length; i += 1) {
-    const audio = new Audio(bakedVoicePath(beat.id, i, parts.length));
-    audio.preload = "auto";
-    await waitAudioMeta(audio);
-    loaded.push(audio);
+    loaded.push(await loadCachedBakedAudio(bakedVoicePath(beat.id, i, parts.length)));
   }
   return loaded;
 }
@@ -625,6 +718,27 @@ async function fetchLivePart(text) {
   return audio;
 }
 
+async function playCaptionFallback(beat, fullText) {
+  setSiteDemoStatus("Voice unavailable · captions only", true);
+  const captionDuration = Math.max(5, fullText.length * 0.058);
+  await new Promise((r) => setTimeout(r, 280));
+  scheduleSpawnCues(beat.spawn, captionDuration);
+
+  if (beat.phase2Spawns?.length) {
+    const fallbackSwapDelayMs = Math.max(700, Math.min(1400, captionDuration * 350));
+    const timer = window.setTimeout(async () => {
+      if (!showRunning) return;
+      await runOrbitSwap(beat);
+    }, fallbackSwapDelayMs);
+    spawnTimers.push(timer);
+  }
+
+  startGlow();
+  await new Promise((r) => setTimeout(r, Math.max(3200, fullText.length * 50)));
+  stopGlow();
+  return false;
+}
+
 async function speakBradley(beat) {
   const parts = beatSpeakParts(beat);
   const fullText = parts.join(" ");
@@ -638,6 +752,10 @@ async function speakBradley(beat) {
     /* try live TTS when developing */
   }
 
+  if (!ALLOW_LIVE_TTS) {
+    return playCaptionFallback(beat, fullText);
+  }
+
   try {
     const audios = [];
     for (const text of parts) {
@@ -647,24 +765,7 @@ async function speakBradley(beat) {
     setSiteDemoStatus("Bradley is speaking · live");
     return true;
   } catch {
-    setSiteDemoStatus("Voice unavailable — captions only", true);
-    const captionDuration = Math.max(5, fullText.length * 0.058);
-    await new Promise((r) => setTimeout(r, 280));
-    scheduleSpawnCues(beat.spawn, captionDuration);
-
-    if (beat.phase2Spawns?.length) {
-      const fallbackSwapDelayMs = Math.max(700, Math.min(1400, captionDuration * 350));
-      const timer = window.setTimeout(async () => {
-        if (!showRunning) return;
-        await runOrbitSwap(beat);
-      }, fallbackSwapDelayMs);
-      spawnTimers.push(timer);
-    }
-
-    startGlow();
-    await new Promise((r) => setTimeout(r, Math.max(3200, fullText.length * 50)));
-    stopGlow();
-    return false;
+    return playCaptionFallback(beat, fullText);
   }
 }
 
@@ -1083,46 +1184,50 @@ function setCaption(text) {
 
 async function runBradleyShow() {
   if (showRunning) return;
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.textContent = "Loading show…";
+  }
+  await preloadBradleyVoice();
+  clearShowVisualState();
   showRunning = true;
   ensureOrbitMotion();
+  let completed = false;
 
   if (startBtn) {
     startBtn.disabled = true;
     startBtn.textContent = "Bradley is speaking…";
   }
-  for (const beat of BRADLEY_SCRIPT) {
-    if (!showRunning) break;
-    setSiteDemoStatus("Speaking");
-    setCaption(beat.line);
-
-    await speakBradley(beat);
-    stopGlow();
-    await new Promise((r) => setTimeout(r, 720));
-  }
-
-  if (startBtn) {
-    startBtn.disabled = false;
-    startBtn.textContent = "Run it again";
-  }
   try {
-    window.parent?.document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
-  } catch {
-    /* cross-origin guard */
+    for (const beat of BRADLEY_SCRIPT) {
+      if (!showRunning) break;
+      setSiteDemoStatus("Speaking");
+      setCaption(beat.line);
+
+      await speakBradley(beat);
+      stopGlow();
+      await new Promise((r) => setTimeout(r, 720));
+    }
+    completed = showRunning;
+  } catch (error) {
+    console.error("[Bradley] show interrupted", error);
+    setCaption("");
+    setSiteDemoStatus("Show reset · tap to retry", true);
+    clearShowVisualState();
+  } finally {
+    stopGlow();
+    clearSpawnTimers();
+    pauseCurrentAudio();
+    showRunning = false;
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.textContent = completed ? "Run it again" : "Let Bradley speak";
+    }
   }
-  showRunning = false;
 }
 
 function resetShow() {
-  stopGlow();
-  stopAudio();
-  if (orbitRaf) cancelAnimationFrame(orbitRaf);
-  orbitRaf = 0;
-  orbitLastTs = 0;
-  orbitPhase = 0;
-  orbitPeriodCurrent = ORBIT_PERIOD_S;
-  phase1SlotIdx = 0;
-  spawned.clear();
-  if (liveAtoms) liveAtoms.innerHTML = "";
+  clearShowVisualState();
   setCaption("");
   setSiteDemoStatus("Live demo");
   showRunning = false;
@@ -1133,12 +1238,35 @@ function resetShow() {
 }
 
 async function preloadBradleyVoice() {
-  if (showRunning || compactStageMode()) return;
-  const results = await Promise.allSettled(BRADLEY_SCRIPT.map((beat) => loadBakedParts(beat)));
-  const loaded = results.filter((result) => result.status === "fulfilled").length;
-  if (loaded && !showRunning) {
-    setSiteDemoStatus(`Bradley ready · ${loaded} beats cached`);
-  }
+  if (bakedVoiceWarmupPromise) return bakedVoiceWarmupPromise;
+
+  bakedVoiceWarmupPromise = (async () => {
+    const assets = bakedVoiceAssets();
+    let loaded = 0;
+    let failed = 0;
+
+    for (const path of assets) {
+      setSiteDemoStatus(`Loading show ${loaded + 1}/${assets.length}`);
+      try {
+        await loadCachedBakedAudio(path);
+        loaded += 1;
+      } catch (error) {
+        failed += 1;
+        console.warn("[Bradley] voice asset failed", path, error);
+      }
+    }
+
+    if (!showRunning) {
+      setSiteDemoStatus(
+        failed ? `Show loaded · ${loaded}/${assets.length} voice clips` : `Show loaded · ${loaded} voice clips`
+      );
+    }
+    const result = { loaded, failed, total: assets.length };
+    if (failed) bakedVoiceWarmupPromise = null;
+    return result;
+  })();
+
+  return bakedVoiceWarmupPromise;
 }
 
 function init() {

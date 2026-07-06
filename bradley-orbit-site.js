@@ -140,8 +140,11 @@
         if (startBtn.textContent === "Run it again") window.BradleySiteShow.reset();
         startBtn.disabled = true;
         document.body.classList.add("show-running");
-        await window.BradleySiteShow.run();
-        document.body.classList.remove("show-running");
+        try {
+          await window.BradleySiteShow.run();
+        } finally {
+          document.body.classList.remove("show-running");
+        }
       });
     }
   }
