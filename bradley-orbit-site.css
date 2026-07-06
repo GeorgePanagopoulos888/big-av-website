@@ -52,17 +52,7 @@ body.site-mode .top.site-brand-lockup {
 }
 
 body.site-mode .top.site-brand-lockup .title {
-  position: absolute;
-  left: var(--site-logo-left);
-  top: var(--site-logo-top);
-  font-size: var(--site-logo-size);
-  line-height: 0.8;
-  letter-spacing: 0;
-  background: linear-gradient(100deg, #fff8d5 0%, #ffe0a1 28%, #d6a947 68%, #fff0b7 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 38px rgba(216, 171, 69, 0.12);
+  display: none;
 }
 
 body.site-mode .top.site-brand-lockup .sub {
@@ -90,7 +80,9 @@ body.site-mode .site-eyebrow {
 }
 
 body.site-mode .site-headline {
-  font: 900 var(--site-headline-size) / 0.98 BigAVDisplay, sans-serif;
+  display: block;
+  padding: 0.05em 0 0.14em;
+  font: 900 var(--site-headline-size) / 1.08 BigAVDisplay, sans-serif;
   letter-spacing: 0;
   color: #ffe3a2;
   background: linear-gradient(100deg, #fff8d5 0%, #ffe3a2 48%, #d6a947 100%);
@@ -391,7 +383,7 @@ body.site-mode.show-running #dispatchOrbit .node {
   }
 
   body.site-mode .site-headline {
-    line-height: 1.02;
+    line-height: 1.12;
     max-width: 100%;
   }
 
