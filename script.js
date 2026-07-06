@@ -1226,11 +1226,14 @@ async function wireBookingsCta() {
 }
 
 wireBookingsCta();
-setVoiceStatus("Live demo");
-function resizeBradleyViz() {
-  resizeStageVizCanvas();
-  resizeFilamentCanvas();
+
+if (liveSystem) {
+  setVoiceStatus("Live demo");
+  function resizeBradleyViz() {
+    resizeStageVizCanvas();
+    resizeFilamentCanvas();
+  }
+  resizeBradleyViz();
+  startIdleBulbBreath();
+  window.addEventListener("resize", resizeBradleyViz);
 }
-resizeBradleyViz();
-startIdleBulbBreath();
-window.addEventListener("resize", resizeBradleyViz);
