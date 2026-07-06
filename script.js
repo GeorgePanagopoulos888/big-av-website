@@ -68,7 +68,7 @@ const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)")
 const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
 const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "bradley-app-bulb-22";
+const BRADLEY_BUILD = "bradley-app-shell-23";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -203,20 +203,12 @@ const BRADLEY_SCRIPT = [
   },
 ];
 
-const liveSystem = document.getElementById("live-system");
-const bradleyCore = document.getElementById("bradley-core");
-const bradleyBulbImg = document.getElementById("bradley-bulb-img");
-const stageVizCanvas = document.getElementById("stage-viz-canvas");
-const speechVizData = new Float32Array(1024);
-let stageVizCtx = null;
-let idleBulbRaf = 0;
-const liveAtoms = document.getElementById("live-atoms");
-const bradleyLine = document.getElementById("bradley-line");
-const liveTitle = document.getElementById("live-title");
+const liveAtoms = null;
+const bradleyTranscript = document.getElementById("transcript");
 const startBtn = document.getElementById("bradley-start");
-const skipBtn = document.getElementById("bradley-skip");
-const signupForm = document.getElementById("bradley-signup");
-const signupEmail = document.getElementById("signup-email");
+const skipBtn = null;
+const signupForm = null;
+const signupEmail = null;
 const voiceStatus = document.getElementById("voice-status");
 
 let showRunning = false;
@@ -721,124 +713,14 @@ function updateSpeechViz() {
   return speechVizData;
 }
 
-function bulbBreathLevel(amp = 0, hot = false) {
-  const breath = (Math.sin(Date.now() / 2100) + 1) / 2;
-  if (hot) return Math.min(1, 0.68 + breath * 0.18 + amp * 0.12);
-  return 0.07 + breath * 0.07;
-}
-
-function resizeStageVizCanvas() {
-  if (!stageVizCanvas || !liveSystem) return;
-  const rect = liveSystem.getBoundingClientRect();
-  const w = Math.max(280, Math.round(rect.width));
-  const h = Math.max(280, Math.round(rect.height));
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const pw = Math.round(w * dpr);
-  const ph = Math.round(h * dpr);
-  if (stageVizCanvas.width !== pw || stageVizCanvas.height !== ph) {
-    stageVizCanvas.width = pw;
-    stageVizCanvas.height = ph;
-    stageVizCtx = stageVizCanvas.getContext("2d");
-    if (stageVizCtx) stageVizCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-}
-
-function bradleyCoreCenter() {
-  if (!bradleyCore || !liveSystem) return { x: 0, y: 0 };
-  const stage = liveSystem.getBoundingClientRect();
-  const core = bradleyCore.getBoundingClientRect();
-  return {
-    x: core.left - stage.left + core.width / 2,
-    y: core.top - stage.top + core.height / 2,
-  };
-}
-
-function drawBradleyStageGlow(cx, cy, stageW, stageH, b, hot) {
-  if (!stageVizCtx) return;
-  const R = Math.min(stageW, stageH) * 0.165;
-  const gr = stageVizCtx.createRadialGradient(cx, cy, R * 0.3, cx, cy, Math.max(stageW, stageH) * 0.95);
-  if (hot) {
-    gr.addColorStop(0, `rgba(255,176,72,${0.5 * b})`);
-    gr.addColorStop(0.45, `rgba(255,150,52,${0.14 * b})`);
-    gr.addColorStop(1, "rgba(255,150,52,0)");
-  } else {
-    gr.addColorStop(0, `rgba(214,176,80,${0.16 * b + 0.05})`);
-    gr.addColorStop(0.5, `rgba(190,150,70,${0.05 * b})`);
-    gr.addColorStop(1, "rgba(190,150,70,0)");
-  }
-  stageVizCtx.fillStyle = gr;
-  stageVizCtx.fillRect(0, 0, stageW, stageH);
-}
-
-function drawBradleyStage(b, hot) {
-  resizeStageVizCanvas();
-  if (!stageVizCanvas || !stageVizCtx || !liveSystem) return;
-  const stageW = liveSystem.clientWidth;
-  const stageH = liveSystem.clientHeight;
-  const { x: cx, y: cy } = bradleyCoreCenter();
-  stageVizCtx.clearRect(0, 0, stageW, stageH);
-  drawBradleyStageGlow(cx, cy, stageW, stageH, b, hot);
-}
-
-function applyBradleyBulbLook(b, hot) {
-  const img = bradleyBulbImg || bradleyCore?.querySelector("img");
-  if (img) {
-    img.style.filter = `drop-shadow(0 0 ${(14 + b * 48).toFixed(0)}px rgba(255,176,72,${(0.3 + b * 0.5).toFixed(2)})) brightness(${(0.92 + b * 0.45).toFixed(2)})`;
-  }
-  liveSystem?.style.setProperty("--bulb-b", b.toFixed(3));
-  liveSystem?.style.setProperty("--bulb-hot", hot ? "1" : "0");
-  drawBradleyStage(b, hot);
-}
-
-function applyVoiceAmp(amp) {
-  const value = amp.toFixed(3);
-  const speaking = document.body.classList.contains("bradley-speaking");
-  const hot = speaking;
-  const b = bulbBreathLevel(amp, hot);
-  applyBradleyBulbLook(b, hot);
-  bradleyCore?.style.setProperty("--voice-amp", value);
-  liveSystem?.style.setProperty("--voice-amp", value);
-  liveAtoms?.querySelectorAll(".live-node").forEach((node) => {
-    node.style.setProperty("--voice-amp", value);
-  });
-}
-
 function startGlow() {
   document.body.classList.add("bradley-speaking");
-  ensureBradleyAudioGraph();
-  glowSmooth = 0;
-
-  const loop = () => {
-    const amp =
-      currentAudio && !currentAudio.paused ? readVoiceAmplitude() : glowSmooth * 0.9;
-    applyVoiceAmp(amp);
-    glowRaf = requestAnimationFrame(loop);
-  };
-
-  if (glowRaf) cancelAnimationFrame(glowRaf);
-  glowRaf = requestAnimationFrame(loop);
+  window.setBradleyAppSpeaking?.(true);
 }
 
 function stopGlow() {
   document.body.classList.remove("bradley-speaking");
-  if (glowRaf) cancelAnimationFrame(glowRaf);
-  glowRaf = 0;
-  glowSmooth = 0;
-  applyBradleyBulbLook(bulbBreathLevel(0, false), false);
-  applyVoiceAmp(0);
-  startIdleBulbBreath();
-}
-
-function startIdleBulbBreath() {
-  if (idleBulbRaf) cancelAnimationFrame(idleBulbRaf);
-  const loop = () => {
-    if (!document.body.classList.contains("bradley-speaking")) {
-      const b = bulbBreathLevel(0, false);
-      applyBradleyBulbLook(b, false);
-    }
-    idleBulbRaf = requestAnimationFrame(loop);
-  };
-  idleBulbRaf = requestAnimationFrame(loop);
+  window.setBradleyAppSpeaking?.(false);
 }
 
 function usedOrbitSlots() {
@@ -962,15 +844,19 @@ function spawnAtom({ id, label, rgb, slot: fixedSlot, spawnAngle, screenBias, av
 }
 
 function setCaption(text) {
-  if (!bradleyLine) return;
-  const line = String(text || "").trim();
-  if (!line) {
-    bradleyLine.textContent = "";
-    bradleyLine.hidden = true;
+  if (!bradleyTranscript) return;
+  const copy = String(text || "").trim();
+  if (!copy) {
+    bradleyTranscript.innerHTML = "";
     return;
   }
-  bradleyLine.textContent = line;
-  bradleyLine.hidden = false;
+  const row = document.createElement("div");
+  row.className = "bradley-line bradly";
+  row.innerHTML = '<span class="who">Bradley</span><span class="txt"></span>';
+  row.querySelector(".txt").textContent = copy;
+  bradleyTranscript.innerHTML = "";
+  bradleyTranscript.appendChild(row);
+  requestAnimationFrame(() => row.classList.add("show"));
 }
 
 async function runBradleyShow() {
@@ -991,7 +877,6 @@ async function runBradleyShow() {
     await new Promise((r) => setTimeout(r, 720));
   }
 
-  if (signupForm) signupForm.hidden = false;
   if (startBtn) {
     startBtn.disabled = false;
     startBtn.textContent = "Run it again";
@@ -1010,8 +895,6 @@ function resetShow() {
   phase1SlotIdx = 0;
   spawned.clear();
   if (liveAtoms) liveAtoms.innerHTML = "";
-  if (signupForm) signupForm.hidden = true;
-  if (liveTitle) liveTitle.textContent = "Bradley";
   setCaption("");
   setVoiceStatus("Live demo");
   showRunning = false;
@@ -1036,31 +919,6 @@ if (startBtn) {
     ensureBradleyAudioGraph();
     await preloadBradleyVoice();
     runBradleyShow();
-  });
-}
-
-if (skipBtn) {
-  skipBtn.addEventListener("click", () => {
-    showRunning = false;
-    stopGlow();
-    stopAudio();
-    if (signupForm) signupForm.hidden = false;
-    setCaption("Leave your email — BIG AV will call for a consult.");
-    if (liveTitle) liveTitle.textContent = "Bradley";
-  });
-}
-
-if (signupForm && signupEmail) {
-  signupForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const email = signupEmail.value.trim();
-    if (!email) return;
-
-    const subject = encodeURIComponent("Bradley demo — consult request");
-    const body = encodeURIComponent(
-      `Hi BIG AV,\n\nI saw the Bradley website demo and want a consult.\n\nEmail: ${email}\n`
-    );
-    window.location.href = `mailto:bradley@big-av.com?subject=${subject}&body=${body}`;
   });
 }
 
@@ -1089,9 +947,4 @@ async function wireBookingsCta() {
 
 wireBookingsCta();
 setVoiceStatus("Live demo");
-function resizeBradleyViz() {
-  resizeStageVizCanvas();
-}
-resizeBradleyViz();
-startIdleBulbBreath();
-window.addEventListener("resize", resizeBradleyViz);
+window.initBradleyAppFrame?.();

@@ -8,8 +8,9 @@
       content="BIG AV — take control of everything without having to do anything. Bradley runs home, business, and life on one layer: voice, integrations, and touch panels programmed when you want them."
     >
     <title>BIG AV | IT · AI UX · Unified Communications</title>
-    <link rel="preload" href="assets/bradley-bulb.png" as="image">
+    <link rel="preload" href="assets/bulb.png" as="image">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="bradley-app-shell.css">
   </head>
   <body>
     <div class="ribbon top" aria-hidden="true"></div>
@@ -37,45 +38,15 @@
 
     <div class="shell">
       <main id="main">
-        <section class="bradley-live" id="bradley-live" aria-labelledby="live-hero-title">
-          <div class="live-header shell">
-            <p class="eyebrow">AV is IT · AI UX · UC</p>
-            <h1 id="live-hero-title" class="live-hero-title">
-              Take control of everything. Without having to do anything.
-            </h1>
-            <p class="voice-status" id="voice-status" aria-live="polite">Live demo</p>
+        <section class="bradley-app-shell" id="bradley-live" aria-label="Bradley">
+          <canvas id="viz" aria-hidden="true"></canvas>
+          <img id="bulbimg" src="assets/bulb.png" alt="" width="1024" height="1024">
+          <div class="bradley-transcript" id="transcript" aria-live="polite"></div>
+          <div class="bradley-app-bar">
+            <p class="bradley-app-status" id="voice-status">Live demo</p>
+            <button class="bradley-app-start" type="button" id="bradley-start">Let Bradley speak</button>
           </div>
-
-          <div class="live-stage-wrap">
-            <div class="live-system" id="live-system" aria-label="Bradley orbit stage">
-              <canvas class="stage-viz-canvas" id="stage-viz-canvas" aria-hidden="true"></canvas>
-              <div class="core" id="bradley-core">
-                <img id="bradley-bulb-img" src="assets/bradley-bulb.png" alt="Bradley intelligence core" width="1024" height="1024">
-              </div>
-              <div class="live-atoms" id="live-atoms" aria-live="polite"></div>
-            </div>
-            <p id="bradley-line" class="live-caption" aria-live="assertive" hidden></p>
-          </div>
-
-          <div class="live-ui shell">
-            <h2 id="live-title" class="live-title">Bradley</h2>
-            <p class="live-summary">Butler intelligence for home, work, and life.</p>
-            <p class="live-summary live-summary--sub">Voice and scenes up front. Your apps connected. Touch panels when you want them — programmed by Bradley, not change orders.</p>
-            <p class="live-hint">Two-minute walkthrough below.</p>
-            <div class="live-controls">
-              <button class="button primary" type="button" id="bradley-start">Let Bradley speak</button>
-              <button class="button secondary" type="button" id="bradley-skip">Skip to signup</button>
-            </div>
-            <form class="live-signup" id="bradley-signup" hidden>
-              <p class="eyebrow">Want this in your space?</p>
-              <label for="signup-email">Email — we'll call you.</label>
-              <div class="signup-row">
-                <input id="signup-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
-                <button class="button primary" type="submit">Request consult</button>
-              </div>
-              <p class="signup-note">Demo only — opens your email app. No data stored on this page.</p>
-            </form>
-          </div>
+          <p id="bradley-line" class="bradley-line-caption" aria-live="assertive" hidden></p>
         </section>
 
         <section class="section contrast" id="difference" aria-labelledby="difference-title">
@@ -382,6 +353,7 @@
       <span>IT · AI UX · UC · <a href="tel:+18775711088">(877) 571-1088</a> · <a href="mailto:bradley@big-av.com">bradley@big-av.com</a></span>
     </footer>
 
-    <script src="script.js?v=bradley-app-bulb-22"></script>
+    <script src="bradley-app-frame.js?v=bradley-app-shell-23"></script>
+    <script src="script.js?v=bradley-app-shell-23"></script>
   </body>
 </html>
