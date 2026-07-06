@@ -65,15 +65,17 @@ const PHASE2_SPAWNS = [
 ];
 
 const IS_TOUCH_DEVICE = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-const SPAWN_OUTPUT_LAG_SEC = IS_TOUCH_DEVICE ? 0.28 : 0.06;
+const USE_WEB_AUDIO_GLOW = !IS_TOUCH_DEVICE;
+const SPAWN_OUTPUT_LAG_SEC = 0.05;
 
-const BRADLEY_BUILD = "blur-halo-flat-bg-16";
+const BRADLEY_BUILD = "spawn-sync-filament-waves-17";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
   phase2Count: PHASE2_SPAWNS.length,
   phase2Labels: PHASE2_SPAWNS.map((atom) => atom.label),
   touchDevice: IS_TOUCH_DEVICE,
+  webAudioGlow: USE_WEB_AUDIO_GLOW,
   spawnLagSec: SPAWN_OUTPUT_LAG_SEC,
 });
 
@@ -106,14 +108,14 @@ const BRADLEY_SCRIPT = [
     title: "Friction",
     line: "No more app-hunting, wall tapping, or guessing which screen rules what.",
     speak: "No more app-hunting, wall tapping, or guessing which screen rules what.",
-    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 1.44 }],
+    spawn: [{ id: "apps", label: "Apps", rgb: "255,120,100", atSec: 1.4 }],
   },
   {
     id: "beat_03",
     title: "Layer",
     line: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
     speak: "One calm intelligence listens, takes a breath… decides, then sets rooms in motion.",
-    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", atSec: 2.6 }],
+    spawn: [{ id: "layer", label: "Layer", rgb: "216,171,69", atSec: 2.58 }],
   },
   {
     id: "beat_04",
@@ -121,8 +123,8 @@ const BRADLEY_SCRIPT = [
     line: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     speak: "Morning arrives: coffee starts, lights soften, and music finds breakfast.",
     spawn: [
-      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.38, slot: 2 },
-      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.42, slot: 0, lagSec: 0.1 },
+      { id: "coffee", label: "Coffee", rgb: "255,191,105", atSec: 2.13, slot: 2 },
+      { id: "lights", label: "Lights", rgb: "255,227,95", atSec: 3.23, slot: 0 },
     ],
   },
   {
@@ -131,9 +133,9 @@ const BRADLEY_SCRIPT = [
     line: "Comfort settles: climate adjusts, theater waits, and security watches.",
     speak: "Comfort settles: climate adjusts, theater waits, and security watches.",
     spawn: [
-      { id: "climate", label: "Climate", rgb: "121,227,143", atSec: 1.32 },
-      { id: "theater", label: "Theater", rgb: "245,200,94", atSec: 2.6 },
-      { id: "security", label: "Security", rgb: "194,140,255", atSec: 3.46 },
+      { id: "climate", label: "Climate", rgb: "121,227,143", atSec: 1.3 },
+      { id: "theater", label: "Theater", rgb: "245,200,94", atSec: 2.58 },
+      { id: "security", label: "Security", rgb: "194,140,255", atSec: 3.44 },
     ],
   },
   {
@@ -141,7 +143,7 @@ const BRADLEY_SCRIPT = [
     title: "Boardroom",
     line: "In the boardroom, presentations start before anyone reaches for a cable.",
     speak: "In the boardroom, presentations start before anyone reaches for a cable.",
-    spawn: [{ id: "boardroom", label: "Boardroom", rgb: "132,200,255", atSec: 0.35 }],
+    spawn: [{ id: "boardroom", label: "Boardroom", rgb: "132,200,255", atSec: 0.11 }],
   },
   {
     id: "beat_07",
@@ -149,8 +151,8 @@ const BRADLEY_SCRIPT = [
     line: "Cameras frame speakers, sound balances, notes appear where teams expect them.",
     speak: "Cameras frame speakers, sound balances, notes appear where teams expect them.",
     spawn: [
-      { id: "cameras", label: "Cameras", rgb: "85,240,216", atSec: 0.45 },
-      { id: "sound", label: "Sound", rgb: "158,224,195", atSec: 1.98 },
+      { id: "cameras", label: "Cameras", rgb: "85,240,216", atSec: 0.18 },
+      { id: "sound", label: "Sound", rgb: "158,224,195", atSec: 1.96 },
     ],
   },
   {
@@ -158,14 +160,14 @@ const BRADLEY_SCRIPT = [
     title: "Welcome",
     line: "At home, guests feel welcome without learning controls.",
     speak: "At home, guests feel welcome without learning controls.",
-    spawn: [{ id: "guests", label: "Guests", rgb: "255,227,95", atSec: 1.0 }],
+    spawn: [{ id: "guests", label: "Guests", rgb: "255,227,95", atSec: 0.98 }],
   },
   {
     id: "beat_09",
     title: "Time",
     line: "Staff regain time usually lost to setup rituals.",
     speak: "Staff regain time usually lost to setup rituals.",
-    spawn: [{ id: "time", label: "Time", rgb: "216,171,69", atSec: 1.38 }],
+    spawn: [{ id: "time", label: "Time", rgb: "216,171,69", atSec: 1.2 }],
   },
   {
     id: "beat_10",
@@ -458,10 +460,11 @@ function waitAudioMeta(audio) {
 }
 
 function ensureBradleyAudioGraph() {
+  if (!USE_WEB_AUDIO_GLOW) return null;
   if (!bradleyAudioCtx) {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return null;
-    bradleyAudioCtx = new Ctx();
+    bradleyAudioCtx = new Ctx({ latencyHint: "interactive" });
     bradleyAnalyser = bradleyAudioCtx.createAnalyser();
     bradleyAnalyser.fftSize = 512;
     bradleyAnalyser.smoothingTimeConstant = 0.55;
@@ -476,7 +479,7 @@ function ensureBradleyAudioGraph() {
 }
 
 function bindAudioAnalyser(audio) {
-  if (!audio || bradleyAudioSources.has(audio)) return;
+  if (!USE_WEB_AUDIO_GLOW || !audio || bradleyAudioSources.has(audio)) return;
   const analyser = ensureBradleyAudioGraph();
   if (!analyser || !bradleyAudioCtx) return;
   try {
@@ -667,8 +670,21 @@ async function speakBradley(beat) {
   }
 }
 
+function readVoiceAmplitudeSynthetic() {
+  if (!currentAudio || currentAudio.paused) return glowSmooth * 0.88;
+  const t = currentAudio.currentTime || 0;
+  const w =
+    Math.abs(Math.sin(t * 10.8)) * 0.52 +
+    Math.abs(Math.sin(t * 6.4 + 0.8)) * 0.34 +
+    Math.abs(Math.sin(t * 15.2 + 1.4)) * 0.18;
+  glowSmooth = glowSmooth * 0.48 + w * 0.52;
+  return Math.min(1, Math.max(0, glowSmooth * 1.65 + 0.12));
+}
+
 function readVoiceAmplitude() {
-  if (!bradleyAnalyser) return 0;
+  if (!USE_WEB_AUDIO_GLOW || !bradleyAnalyser) {
+    return readVoiceAmplitudeSynthetic();
+  }
   const bins = new Uint8Array(bradleyAnalyser.frequencyBinCount);
   bradleyAnalyser.getByteFrequencyData(bins);
   let sum = 0;
@@ -684,7 +700,7 @@ function readVoiceAmplitude() {
 
 function applyVoiceAmp(amp) {
   const value = amp.toFixed(3);
-  const filament = Math.min(1, amp * 1.2 + 0.04).toFixed(3);
+  const filament = Math.min(1, amp * 1.35 + 0.08).toFixed(3);
   const jitter = (amp * 3.4).toFixed(3);
   bradleyCore?.style.setProperty("--voice-amp", value);
   bradleyCore?.style.setProperty("--filament-glow", filament);
