@@ -97,7 +97,14 @@
     top.classList.add("site-brand-lockup");
     title.textContent = "Meet Bradley.";
     sub.innerHTML =
-      '<span class="site-headline">Agentic intelligence for intelligent environments.</span><span class="site-eyebrow">BIG AV · AV is IT · AI UX · UC</span>';
+      '<span class="site-headline">Take control of everything.<br>Without having to do anything.</span><span class="site-eyebrow">Meet Bradley</span>';
+
+    if (!document.querySelector(".site-big-av-mark")) {
+      const mark = document.createElement("div");
+      mark.className = "site-big-av-mark";
+      mark.textContent = "BIG AV";
+      document.body.appendChild(mark);
+    }
   }
 
   function refreshSiteGeometry() {
