@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
 <title>Bradley Orbit Board</title>
 <style>
 @font-face{font-family:BigAVDisplay;src:url("assets/fonts/Outfit-Bold.ttf")}
@@ -489,7 +490,7 @@ button.cp-armed{border-color:rgba(255,154,98,.6)!important;color:#ffb98a!importa
 <div class="ribbon top"></div><div class="ribbon bottom"></div>
 <main class="app">
   <nav class="rail">
-    <div class="mark"><img src="assets/bulb.png" alt="Bradley"></div>
+    <div class="mark"><img src="assets/bulb.webp" alt="Bradley"></div>
     <button class="on">BR</button><button>BA</button><button>DT</button><button>JP</button><button>TS</button>
     <div class="grow"></div><div class="live"></div>
   </nav>
@@ -531,7 +532,7 @@ button.cp-armed{border-color:rgba(255,154,98,.6)!important;color:#ffb98a!importa
     <svg id="lines"></svg>
     <svg id="popupTethers"></svg>
     <canvas class="voice-waves" id="voiceWaves"></canvas>
-    <div class="core" id="core"><img src="assets/bulb.png" alt="Bradley"></div>
+    <div class="core" id="core"><img src="assets/bulb.webp" alt="Bradley"></div>
 
     <section class="deep" id="deep">
       <aside class="deep-side">
@@ -573,7 +574,7 @@ button.cp-armed{border-color:rgba(255,154,98,.6)!important;color:#ffb98a!importa
       <div class="chat-body" id="chatBody"><div class="chat-empty">Voice and typed turns will stay here.</div></div>
     </section>
     <form class="ask" id="askForm">
-      <img src="assets/bulb.png" alt="">
+      <img src="assets/bulb.webp" alt="">
       <button type="button" class="mic-toggle muted" id="micToggle" aria-label="Start listening" title="Start listening">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/>
@@ -587,7 +588,7 @@ button.cp-armed{border-color:rgba(255,154,98,.6)!important;color:#ffb98a!importa
     </form>
   </section>
   <aside class="side">
-    <div class="voice"><img src="assets/bulb.png" alt=""><div><b id="sideTitle">Bradley</b><span id="sideSubtitle">Home command center. Listening, routing, receipts, and safe action.</span></div></div>
+    <div class="voice"><img src="assets/bulb.webp" alt=""><div><b id="sideTitle">Bradley</b><span id="sideSubtitle">Home command center. Listening, routing, receipts, and safe action.</span></div></div>
     <div class="slabel">Live system</div>
     <div class="sidegrid">
       <div class="metric"><b id="sideVoice">...</b><span>voice</span></div>
@@ -2988,7 +2989,7 @@ function fvProjects(v,ft){
   const cos=fmk("div","f-cosmos");
   const svg=document.createElementNS("http://www.w3.org/2000/svg","svg"); svg.setAttribute("class","f-wires"); cos.appendChild(svg);
   const hub=fmk("div","f-hub");
-  const img=document.createElement("img"); img.src="/asseassets/bulb.png"; img.alt=""; hub.appendChild(img);
+  const img=document.createElement("img"); img.src="assets/bulb.webp"; img.alt=""; hub.appendChild(img);
   hub.appendChild(fmk("b",null,"Bradley"));
   hub.appendChild(fmk("small",null,"Routes the work. Keeps the receipts."));
   cos.appendChild(hub);

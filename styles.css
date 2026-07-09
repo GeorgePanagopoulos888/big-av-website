@@ -1724,3 +1724,12 @@ li {
     transition: none;
   }
 }
+
+/* SEO: hero heading is an h1 for document outline, styled to match the original h2 look */
+#agentic-hero-title {
+  font-size: clamp(1.65rem, 3.4vw, 2.6rem);
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: var(--gold2);
+}
