@@ -1733,3 +1733,199 @@ li {
   background-clip: initial;
   color: var(--gold2);
 }
+
+/* Bradley interface preview devices (design preview, pure CSS) */
+.ui-devices {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: clamp(1rem, 3vw, 2rem);
+  align-items: end;
+  margin: 1.8rem 0 1.4rem;
+}
+.device {
+  position: relative;
+  background: #0a0a0b;
+  border: 1px solid var(--line2);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+.device-panel {
+  border-radius: 18px;
+  padding: 14px;
+  aspect-ratio: 16 / 9;
+}
+.device-phone {
+  border-radius: 34px;
+  padding: 10px;
+  aspect-ratio: 9 / 19;
+  width: min(240px, 70vw);
+  justify-self: center;
+}
+.phone-notch {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 78px;
+  height: 18px;
+  border-radius: 10px;
+  background: #000;
+  z-index: 2;
+}
+.ui-screen {
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(216, 171, 69, 0.10), transparent 55%),
+    linear-gradient(180deg, #060606, #020202);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(0.7rem, 1.6vw, 1.1rem);
+  gap: clamp(0.5rem, 1.2vw, 0.9rem);
+}
+.device-phone .ui-screen {
+  border-radius: 26px;
+  padding-top: 2.6rem;
+}
+.ui-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ui-core {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.ui-core img {
+  width: clamp(44px, 6vw, 64px);
+  height: auto;
+  filter: drop-shadow(0 0 20px rgba(216, 171, 69, 0.6));
+}
+.ui-core b {
+  font-family: BigAVDisplay, sans-serif;
+  letter-spacing: 0.04em;
+  color: var(--gold2);
+  display: block;
+  font-size: 1.15rem;
+}
+.ui-core span {
+  font-size: 0.62rem;
+  color: var(--green);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.ui-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+.ui-tiles--phone {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ui-tile {
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  padding: 0.5rem 0.35rem;
+  text-align: center;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+}
+.ui-tile.is-on {
+  border-color: var(--line);
+  color: var(--gold2);
+  background: rgba(216, 171, 69, 0.10);
+  box-shadow: 0 0 18px rgba(216, 171, 69, 0.12) inset;
+}
+.ui-faders {
+  display: grid;
+  gap: 0.55rem;
+}
+.ui-fader {
+  display: grid;
+  gap: 0.28rem;
+}
+.ui-fader span {
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ui-fader i {
+  display: block;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  position: relative;
+}
+.ui-fader i::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--v, 50%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold3), var(--gold));
+}
+.ui-greet {
+  font-family: BigAVDisplay, sans-serif;
+  color: var(--gold2);
+  font-size: 1rem;
+  margin: 0;
+}
+.ui-chat {
+  display: grid;
+  gap: 0.4rem;
+}
+.ui-ask,
+.ui-reply {
+  font-size: 0.66rem;
+  line-height: 1.45;
+  padding: 0.45rem 0.6rem;
+  border-radius: 12px;
+  max-width: 92%;
+}
+.ui-ask {
+  justify-self: end;
+  background: rgba(216, 171, 69, 0.14);
+  color: var(--gold2);
+  border-bottom-right-radius: 4px;
+}
+.ui-reply {
+  justify-self: start;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.ui-mic {
+  margin-top: auto;
+  display: grid;
+  place-items: center;
+  padding-bottom: 0.4rem;
+}
+.ui-mic img {
+  width: 34px;
+  filter: drop-shadow(0 0 16px rgba(216, 171, 69, 0.5));
+}
+.ui-devices figcaption {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+@media (max-width: 760px) {
+  .ui-devices {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .device-phone {
+    justify-self: start;
+  }
+}
