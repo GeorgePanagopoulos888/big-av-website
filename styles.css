@@ -169,3 +169,4 @@ footer .legal a{color:var(--dim);margin-right:18px}
 .panel .fader label{display:block;font:400 9.5px Michroma,sans-serif;letter-spacing:.14em;color:var(--mute);margin-bottom:8px}
 .panel .track{height:5px;border-radius:3px;background:#25211a;overflow:hidden}
 .panel .track i{display:block;height:100%;background:linear-gradient(90deg,var(--dim),var(--head));border-radius:3px}
+.panel img{border:0;width:auto;max-width:none}
