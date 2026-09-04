@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /REBUILD-SPEC.md
 
 Sitemap: https://big-av.com/sitemap.xml
