@@ -39,7 +39,7 @@ nav.main a:hover,nav.main a:focus-visible,nav.main a[aria-current="page"]{color:
 @media(max-width:700px){
   .mark .div{display:none}
   .mark img{height:38px}
-  .specbar .wrap span:last-child{display:none}
+  .specbar .wrap>:last-child{display:none}
 }
 
 /* ---- hero ---- */
@@ -114,7 +114,7 @@ h3{font:600 19px/1.3 Poppins,sans-serif;color:var(--head)}
 .feature>div{position:relative;padding:26px}
 .feature b{display:block;font:600 19px Poppins,sans-serif;color:var(--head)}
 .feature span{font-size:14px;color:var(--mute)}
-.feature.banner{min-height:clamp(280px,42vw,520px);margin-top:34px}
+.feature.banner{min-height:clamp(240px,32vw,420px);margin-top:34px}
 .feature.banner img{filter:brightness(.68)}
 
 /* ---- stage rows + closing calls to action ---- */
