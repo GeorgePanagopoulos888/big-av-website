@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /SITE-COPY.md
-Disallow: /bookings-config.json
+Disallow: /REBUILD-SPEC.md
 
 Sitemap: https://big-av.com/sitemap.xml

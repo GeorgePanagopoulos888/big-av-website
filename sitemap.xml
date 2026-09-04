@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://big-av.com/</loc>
-    <lastmod>2026-07-09</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
+  <url><loc>https://big-av.com/</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/about.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/services.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/agentic-ai/</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/contact.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/privacy.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/terms.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/markets/</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/markets/commercial.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/markets/healthcare.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/markets/institutional.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/markets/landscape.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/markets/retail-hospitality.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/markets/residential.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/markets/industrial.html</loc><lastmod>2026-09-04</lastmod></url>
+  <url><loc>https://big-av.com/markets/entertainment-venues.html</loc><lastmod>2026-09-04</lastmod></url>
 </urlset>

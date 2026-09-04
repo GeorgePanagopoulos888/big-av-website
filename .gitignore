@@ -1,4 +1,7 @@
 .DS_Store
 .backups/
 bus-reply-*.json
-signature/
+signature/tools/
+GATES.md
+REBUILD-SPEC.md
+.unlazy/

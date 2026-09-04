@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Bradley | BIG AV</title>
+<style>
+@font-face{font-family:BigAVDisplay;src:url("orbit-assets/fonts/Outfit-Bold.ttf")}
+@font-face{font-family:BigAVBody;src:url("orbit-assets/fonts/InstrumentSans-Regular.ttf")}
+:root{
+  --bg:#020303; --deep:#050707; --panel:rgba(7,9,10,.88); --gold:#d8ab45; --gold2:#ffe3a2;
+  --gold3:#8e6427; --text:#f4edde; --muted:#898d8b; --line:rgba(222,176,75,.28);
+  --line2:rgba(255,255,255,.075); --blue:#84c8ff; --green:#9ee0c3; --warn:#f0c76a; --bad:#ff9e9e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:BigAVBody,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body:before{content:"";position:fixed;inset:0;background:
+  radial-gradient(circle at 50% 52%,rgba(216,171,69,.19),transparent 30%),
+  radial-gradient(circle at 78% 16%,rgba(255,227,162,.10),transparent 24%),
+  linear-gradient(135deg,#111719 0%,#070909 42%,#010101 100%)}
+body:after{content:"";position:fixed;inset:0;background-image:linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(0deg,rgba(255,255,255,.014) 1px,transparent 1px);background-size:72px 72px;opacity:.28;mask-image:radial-gradient(circle at center,black,transparent 82%)}
+.ribbon{position:fixed;left:-12vw;right:-12vw;height:38vh;border-radius:50%;pointer-events:none}
+.ribbon.top{top:-18vh;border-bottom:2px solid rgba(255,225,157,.64);box-shadow:0 20px 60px rgba(216,171,69,.22);transform:rotate(-4deg)}
+.ribbon.bottom{bottom:-23vh;border-top:2px solid rgba(255,210,116,.58);box-shadow:0 -22px 62px rgba(216,171,69,.18);transform:rotate(-5deg)}
+.app{position:relative;z-index:2;height:100vh;display:grid;grid-template-columns:minmax(0,1fr)}
+.main{position:relative;min-width:0;overflow:hidden;padding:25px 28px}
+.top{position:absolute;left:42px;top:32px;z-index:6}
+.bigav{display:none}
+.title{font:900 82px/.88 BigAVDisplay;letter-spacing:.005em;margin-top:0;background:linear-gradient(100deg,#fff8d5,#d6a947 58%,#fff0b7);-webkit-background-clip:text;color:transparent}
+.sub{max-width:760px;color:var(--muted);font-size:14px;line-height:1.45;margin-top:11px}
+.tabs{position:absolute;top:42px;right:28px;z-index:6;display:flex;border:1px solid var(--line);border-radius:12px;background:rgba(2,3,3,.74);overflow:hidden;box-shadow:0 0 42px rgba(216,171,69,.09)}
+.tabs button{height:42px;border:0;border-right:1px solid var(--line2);background:transparent;color:#777b7a;padding:0 17px;font:900 12px BigAVDisplay;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;transition:background .16s,color .16s,box-shadow .16s}
+.tabs button:last-child{border-right:0}.tabs .on{background:linear-gradient(180deg,rgba(216,171,69,.22),rgba(216,171,69,.07));color:var(--gold2)}
+.system{position:absolute;left:50%;top:53.5%;width:min(940px,calc(100% - 44px));height:min(760px,calc(100vh - 210px));transform:translate(-50%,-50%);z-index:4;perspective:1200px;pointer-events:none}
+.orbit-line{--rgb:245,200,94;--rot:0deg;--w:880px;--h:270px;--dur:120s;position:absolute;left:50%;top:50%;width:var(--w);height:var(--h);border-radius:50%;border:1px solid rgba(var(--rgb),.15);transform:translate(-50%,-50%) rotate(var(--rot));pointer-events:none;opacity:.62;filter:drop-shadow(0 0 14px rgba(var(--rgb),.16));z-index:1}
+.orbit-line:before{content:"";position:absolute;inset:-1px;border-radius:50%;border-top:1px solid rgba(255,255,255,.20);border-right:1px solid rgba(var(--rgb),.20);border-bottom:1px solid transparent;border-left:1px solid transparent}
+.orbit-line:after{content:"";position:absolute;right:8%;top:48%;width:6px;height:6px;border-radius:50%;background:rgb(var(--rgb));box-shadow:0 0 18px rgb(var(--rgb)),0 0 38px rgba(var(--rgb),.48)}
+.orbit-line.l1{--rgb:245,200,94;--rot:-10deg;--w:820px;--h:235px;--dur:150s;opacity:.72}
+.orbit-line.l2{--rgb:245,200,94;--rot:28deg;--w:780px;--h:280px;--dur:132s;opacity:.48}
+.orbit-line.l3{--rgb:85,240,216;--rot:73deg;--w:760px;--h:255px;--dur:116s;opacity:.34}
+.orbit-line.l4{--rgb:132,200,255;--rot:116deg;--w:720px;--h:220px;--dur:128s;opacity:.32}
+.orbit-line.l5{--rgb:213,97,255;--rot:54deg;--w:710px;--h:300px;--dur:104s;opacity:.30}
+.orbit-line.l6{--rgb:255,123,61;--rot:143deg;--w:835px;--h:205px;--dur:138s;opacity:.27}
+.orbit-line.l7{--rgb:255,227,95;--rot:-46deg;--w:680px;--h:320px;--dur:118s;opacity:.26}
+.orbit-line.l8{--rgb:244,240,223;--rot:96deg;--w:610px;--h:190px;--dur:98s;opacity:.22}
+.ring-title{display:none}
+.ring-shell{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(216,171,69,.17);pointer-events:none}
+.ring-shell.r2{inset:105px;border-color:rgba(132,200,255,.11);border-style:dashed}
+.ring-shell.r3{inset:210px;border-color:rgba(255,227,162,.16)}
+.ring-shell{display:none}
+.orbit{position:absolute;inset:0;border-radius:50%;pointer-events:none;z-index:4}
+.orbit.dispatch{inset:0}
+.orbit.tasks{inset:0}
+.node{position:absolute;left:var(--x,50%);top:var(--y,50%);width:74px;height:90px;margin:-37px 0 0 -37px;border:0;background:transparent;pointer-events:auto;cursor:pointer;color:var(--gold2);opacity:var(--target-opacity,1);transition:filter .16s ease,opacity .34s ease-out;transform:scale(var(--depth,1))}
+.js-ready .node{transform:scale(var(--depth,1));filter:brightness(var(--depth,1))}
+.node{--node:#d8ab45;--node2:#ffe3a2;--node-rgb:216,171,69}
+.node .disc{position:absolute;left:50%;top:29px;width:66px;height:52px;margin:-26px 0 0 -33px;border-radius:50%;overflow:visible;background:
+  radial-gradient(circle at 83% 34%,rgba(255,255,255,.95) 0 3px,rgba(var(--node-rgb),.88) 4px 7px,transparent 8px),
+  radial-gradient(circle at 18% 61%,rgba(255,255,255,.82) 0 2px,rgba(var(--node-rgb),.70) 3px 6px,transparent 7px),
+  radial-gradient(circle at 67% 76%,rgba(255,255,255,.72) 0 2px,rgba(var(--node-rgb),.64) 3px 5px,transparent 6px),
+  radial-gradient(circle at 50% 50%,#fff 0 4px,var(--node2) 5px 9px,rgba(var(--node-rgb),.82) 10px 16px,rgba(var(--node-rgb),.20) 17px 28px,transparent 38px);
+  filter:drop-shadow(0 0 12px rgba(var(--node-rgb),.35)) drop-shadow(0 0 28px rgba(var(--node-rgb),.18));animation:atomBreathe 4.8s ease-in-out infinite}
+.node .disc:before,.node .disc:after{content:"";position:absolute;left:50%;top:50%;width:66px;height:23px;margin:-11.5px 0 0 -33px;border-radius:50%;border:1px solid rgba(var(--node-rgb),.70);box-shadow:0 0 12px rgba(var(--node-rgb),.42),inset 0 0 8px rgba(var(--node-rgb),.18)}
+.node .disc:before{transform:rotate(31deg);border-top-color:rgba(255,255,255,.78);border-left-color:rgba(var(--node-rgb),.28);animation:spinA 7.5s linear infinite}
+.node .disc:after{transform:rotate(-62deg);border-right-color:rgba(255,255,255,.62);border-bottom-color:rgba(var(--node-rgb),.26);animation:spinB 9s linear infinite reverse}
+.node:before{content:"";position:absolute;left:50%;top:29px;width:66px;height:23px;margin:-11.5px 0 0 -33px;border-radius:50%;border:1px solid rgba(var(--node-rgb),.38);transform:rotate(92deg);box-shadow:0 0 11px rgba(var(--node-rgb),.20);pointer-events:none;animation:spinC 11s linear infinite}
+.node .label{position:absolute;left:50%;top:67px;min-width:130px;transform:translateX(-50%);text-align:center;font:900 8.5px BigAVDisplay;letter-spacing:.15em;text-transform:uppercase;color:rgba(244,237,222,.78);text-shadow:0 0 18px rgba(0,0,0,.86);white-space:nowrap;opacity:calc(.72 + (var(--depth,1) - .78))}
+.node.agent{--node:#84c8ff;--node2:#c8f0ff;--node-rgb:132,200,255;color:var(--node)}
+.node:hover .disc,.node.active .disc{filter:drop-shadow(0 0 18px rgba(var(--node-rgb),.68)) drop-shadow(0 0 42px rgba(var(--node-rgb),.34));animation-duration:2.4s}
+.node.active .label{color:var(--node2);text-shadow:0 0 22px rgba(var(--node-rgb),.72),0 0 18px rgba(0,0,0,.9)}
+@keyframes atomBreathe{0%,100%{transform:scale(1);opacity:.88}50%{transform:scale(1.055);opacity:1}}
+@keyframes spinA{to{transform:rotate(391deg)}}
+@keyframes spinB{to{transform:rotate(298deg)}}
+@keyframes spinC{to{transform:rotate(452deg)}}
+.node.orbit-fade-out{opacity:0!important;pointer-events:none}
+.node.orbit-fade-in{opacity:0;pointer-events:none}
+.node.orbit-fade-in.orbit-fade-ready{opacity:var(--target-opacity,1);pointer-events:auto}
+@media (prefers-reduced-motion: reduce){
+  .node{transition:filter .16s ease}
+}
+.core{position:absolute;left:50%;top:53.5%;width:470px;height:470px;transform:translate(-50%,-50%);z-index:3;border-radius:50%;display:grid;place-items:center;pointer-events:none}
+.core:before{content:"";position:absolute;inset:-25px;border-radius:50%;z-index:0;border:1px solid rgba(var(--core-rgb,216,171,69),calc(.22 + var(--voice-amp,0)*.50));background:radial-gradient(circle,rgba(var(--core-rgb,216,171,69),calc(.12 + var(--voice-amp,0)*.22)),rgba(var(--core-rgb,216,171,69),.025) 58%,transparent 72%);box-shadow:0 0 calc(144px + var(--voice-amp,0)*110px) rgba(var(--core-rgb,216,171,69),calc(.25 + var(--voice-amp,0)*.38)), inset 0 0 74px rgba(var(--core-rgb,216,171,69),calc(.035 + var(--voice-amp,0)*.12))}
+.core:after{content:"";position:absolute;inset:62px;border-radius:50%;z-index:1;background:radial-gradient(circle,rgba(var(--core-rgb,255,194,80),calc(.18 + var(--voice-amp,0)*.32)),transparent 68%);filter:blur(10px);opacity:calc(.58 + var(--voice-amp,0)*.24)}
+.core img{position:relative;z-index:2;width:374px;height:374px;border-radius:74px;filter:hue-rotate(var(--core-hue,0deg)) saturate(calc(1 + var(--voice-amp,0)*.55)) drop-shadow(0 0 calc(34px + var(--voice-amp,0)*70px) rgba(var(--core-rgb,255,181,64),calc(.52 + var(--voice-amp,0)*.42)));animation:pulse 2.2s ease-in-out infinite}
+body.recording,body.finalizing{--core-rgb:82,208,255;--core-hue:170deg}
+body.speaking{--core-rgb:255,190,92;--core-hue:0deg}
+body.recording .core img,body.finalizing .core img{animation:pulseVoice .95s ease-in-out infinite}
+body.speaking .core img{animation:pulseSpeak .95s ease-in-out infinite}
+@keyframes pulse{0%,100%{filter:drop-shadow(0 0 22px rgba(255,181,64,.38));transform:scale(1)}50%{filter:drop-shadow(0 0 56px rgba(255,199,92,.86));transform:scale(1.035)}}
+@keyframes pulseVoice{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+@keyframes pulseSpeak{0%,100%{transform:scale(1.01)}50%{transform:scale(1.055)}}
+.ring-shell:after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid transparent;border-top-color:rgba(255,227,162,.24);border-right-color:rgba(216,171,69,.10);animation:trackDrive 48s linear infinite}
+.ring-shell.r2:after{animation-duration:62s;animation-direction:reverse;border-top-color:rgba(132,200,255,.18)}
+@keyframes trackDrive{to{transform:rotate(360deg)}}
+#lines{position:absolute;inset:0;z-index:6;pointer-events:none}
+#lines line{stroke:var(--active-line,rgba(255,216,128,.70));stroke-width:1.5;filter:drop-shadow(0 0 9px var(--active-glow,rgba(216,171,69,.52)))}
+#lines circle{fill:var(--active-dot,rgba(255,227,162,.75));filter:drop-shadow(0 0 10px var(--active-glow,rgba(216,171,69,.55)))}
+#popupTethers{position:absolute;inset:0;z-index:8;pointer-events:none}
+#popupTethers line{stroke:rgba(255,227,162,.58);stroke-width:1.2;stroke-dasharray:5 7;filter:drop-shadow(0 0 9px rgba(216,171,69,.46))}
+#popupTethers circle{fill:rgba(255,227,162,.78);filter:drop-shadow(0 0 10px rgba(216,171,69,.56))}
+.voice-waves{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:.95}
+@media(max-width:1120px){body{overflow:auto}.app{height:1050px}.title{font-size:58px}.system{width:740px;height:740px}.core{width:380px;height:380px}.core img{width:304px;height:304px}}
+</style>
+</head>
+<body class="site-mode">
+<div class="ribbon top"></div><div class="ribbon bottom"></div>
+<main class="app">
+  <section class="main" id="surface">
+    <div class="top">
+      <div class="title">Bradley</div>
+      <div class="sub">Meet Bradley - BIG AV's butler intelligence for homes, offices, and venues. One calm layer that listens, decides, and sets rooms in motion.</div>
+    </div>
+    <div class="tabs"><button class="on">Bradley</button><button>Why</button><button>Home</button><button>Work</button><button>Contact</button></div>
+
+    <div class="system" id="system">
+      <div class="orbit-line l1"></div><div class="orbit-line l2"></div><div class="orbit-line l3"></div><div class="orbit-line l4"></div>
+      <div class="orbit-line l5"></div><div class="orbit-line l6"></div><div class="orbit-line l7"></div><div class="orbit-line l8"></div>
+      <div class="orbit tasks" id="tasksOrbit"></div>
+      <div class="orbit dispatch" id="dispatchOrbit"></div>
+    </div>
+
+    <svg id="lines"></svg>
+    <svg id="popupTethers"></svg>
+    <canvas class="voice-waves" id="voiceWaves"></canvas>
+    <div class="core" id="core"><img src="../assets/bulb.webp" alt="Bradley"></div>
+  </section>
+</main>
+<script>
+/* Bradley public stage engine - renders the orbit stage and voice glow for the
+   site demo (orbit-show.js). This is the public build: no dashboard data,
+   no app logic. */
+const surface=document.getElementById("surface"), system=document.getElementById("system"), core=document.getElementById("core"), lines=document.getElementById("lines"), tethers=document.getElementById("popupTethers");
+const waveCanvas=document.getElementById("voiceWaves"), waveCtx=waveCanvas.getContext("2d");
+const nodes=[...document.querySelectorAll(".node")];
+const rails=[
+  {w:820,h:235,rot:-10},
+  {w:780,h:280,rot:28},
+  {w:760,h:255,rot:73},
+  {w:720,h:220,rot:116},
+  {w:710,h:300,rot:54},
+  {w:835,h:205,rot:143},
+  {w:680,h:320,rot:-46},
+  {w:610,h:190,rot:96}
+];
+const orbiters=nodes.map(node=>({
+  node,
+  rail:Number(node.dataset.rail||0),
+  angle:Number(node.dataset.angle||0),
+  speed:Number(node.dataset.speed||0)
+}));
+let orbitPaused=false, lastFrame=performance.now(), waveDpr=1;
+let recording=false, finalizing=false, running=false, botSpeaking=false;
+let micLevel=0, speakAmp=0;
+function $(id){return document.getElementById(id)}
+function setVoiceStatus(text, show=true){
+  const el=$("voiceStatus");
+  if(el){ el.textContent=text||""; el.classList.toggle("show", !!show&&!!text); }
+}
+function setCoreAmp(value){
+  const v=Math.max(0,Math.min(1,value||0));
+  document.documentElement.style.setProperty("--voice-amp",v.toFixed(3));
+}
+function beginSpeakingVisual(label="Speaking"){
+  botSpeaking=true;
+  speakAmp=.82;
+  document.body.classList.remove("recording","finalizing");
+  document.body.classList.add("speaking");
+  setVoiceStatus(label,true);
+}
+function endSpeakingVisual(){
+  speakAmp=0;
+  botSpeaking=false;
+  document.body.classList.remove("speaking");
+}
+function stopMic(){ running=false; setVoiceStatus("Muted", true); }
+function center(el){const s=surface.getBoundingClientRect(), r=el.getBoundingClientRect(); return{x:r.left-s.left+r.width/2,y:r.top-s.top+r.height/2}}
+function isSiteMode(){return document.body.classList.contains("site-mode")}
+function siteLightweightVoice(){
+  return isSiteMode()&&window.matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)").matches;
+}
+function siteWaveBox(){
+  const root=surface.getBoundingClientRect();
+  const target=isSiteMode()?system:surface;
+  const r=target.getBoundingClientRect();
+  return {left:r.left-root.left,top:r.top-root.top,width:r.width,height:r.height};
+}
+function waveCenter(){
+  if(!isSiteMode()) return center(core);
+  const w=waveCanvas.getBoundingClientRect(), r=core.getBoundingClientRect();
+  return {x:r.left-w.left+r.width/2,y:r.top-w.top+r.height/2};
+}
+function fittedRail(rail,parent){
+  const safeX=84, safeY=92;
+  const rot=Math.abs((rail.rot||0)*Math.PI/180);
+  const extW=Math.abs(rail.w*Math.cos(rot))+Math.abs(rail.h*Math.sin(rot));
+  const extH=Math.abs(rail.w*Math.sin(rot))+Math.abs(rail.h*Math.cos(rot));
+  const maxW=Math.max(220,parent.clientWidth-safeX*2);
+  const maxH=Math.max(180,parent.clientHeight-safeY*2);
+  const scale=Math.min(1,maxW/extW,maxH/extH);
+  return {w:rail.w*scale,h:rail.h*scale,rot:rail.rot,scale};
+}
+function syncOrbitRailLines(parent){
+  document.querySelectorAll(".orbit-line").forEach((line,i)=>{
+    const rail=rails[i];
+    if(!rail) return;
+    const fit=fittedRail(rail,parent);
+    line.style.setProperty("--w",fit.w.toFixed(1)+"px");
+    line.style.setProperty("--h",fit.h.toFixed(1)+"px");
+  });
+}
+function updateNodePositions(dt){
+  const parent=system;
+  syncOrbitRailLines(parent);
+  const cx=parent.clientWidth/2;
+  const cy=parent.clientHeight*.50;
+  orbiters.forEach(o=>{
+    if(!orbitPaused) o.angle=(o.angle+o.speed*dt+360)%360;
+    const rail=fittedRail(rails[o.rail]||rails[0],parent);
+    const rad=o.angle*Math.PI/180;
+    const rot=rail.rot*Math.PI/180;
+    const px=Math.cos(rad)*(rail.w/2);
+    const py=Math.sin(rad)*(rail.h/2);
+    const x=cx+px*Math.cos(rot)-py*Math.sin(rot);
+    const y=cy+px*Math.sin(rot)+py*Math.cos(rot);
+    const depth=.97+((Math.sin(rad)+1)/2)*.06;
+    o.node.style.left=x+"px";
+    o.node.style.top=y+"px";
+    o.node.style.setProperty("--depth",depth.toFixed(3));
+    o.node.style.zIndex=String(depth>=.95 ? 6 : 5);
+  });
+}
+function placeNodes(now){
+  const dt=Math.min(.08,(now-lastFrame)/1000);
+  lastFrame=now;
+  updateNodePositions(dt);
+  draw();
+  drawVoiceWaves();
+  requestAnimationFrame(placeNodes);
+}
+function resizeWaveCanvas(){
+  if(siteLightweightVoice()){
+    waveCanvas.width=1;
+    waveCanvas.height=1;
+    waveCanvas.style.width="1px";
+    waveCanvas.style.height="1px";
+    waveCanvas.style.opacity="0";
+    return;
+  }
+  const r=siteWaveBox();
+  waveDpr=Math.min(2,window.devicePixelRatio||1);
+  waveCanvas.width=Math.max(1,Math.floor(r.width*waveDpr));
+  waveCanvas.height=Math.max(1,Math.floor(r.height*waveDpr));
+  waveCanvas.style.left=r.left+"px";
+  waveCanvas.style.top=r.top+"px";
+  waveCanvas.style.right="auto";
+  waveCanvas.style.bottom="auto";
+  waveCanvas.style.width=r.width+"px";
+  waveCanvas.style.height=r.height+"px";
+  waveCtx.setTransform(waveDpr,0,0,waveDpr,0,0);
+}
+function drawVoiceWaves(){
+  if(siteLightweightVoice()){
+    setCoreAmp(speakAmp||0);
+    return;
+  }
+  const w=waveCanvas.clientWidth||surface.clientWidth, h=waveCanvas.clientHeight||surface.clientHeight;
+  if(!w||!h) return;
+  waveCtx.clearRect(0,0,w,h);
+  const activeVoice=running&&(recording||finalizing||micLevel>.006);
+  const speaking=botSpeaking;
+  const targetAmp=speaking ? Math.max(.20,speakAmp) : (activeVoice ? Math.min(1,Math.max(.12,micLevel*18)) : 0);
+  setCoreAmp(targetAmp);
+  if(!activeVoice&&!speaking) return;
+  const c=waveCenter(), t=performance.now()/420;
+  const coreWidth=core.getBoundingClientRect().width||470;
+  const waveScale=isSiteMode()?Math.max(.34,Math.min(.82,(coreWidth/470)*.92)):1;
+  const ampBase=speaking ? .16 : Math.min(.55,Math.max(.12,micLevel*12));
+  const color=speaking?"255,190,92":"132,200,255";
+  for(let band=0;band<3;band++){
+    const radius=(150+band*34+Math.sin(t+band)*6)*waveScale;
+    const amp=(18+band*7)*ampBase*waveScale;
+    waveCtx.beginPath();
+    for(let i=0;i<=220;i++){
+      const a=(Math.PI*2*i/220);
+      const wobble=Math.sin(a*5+t*1.8+band)*amp+Math.sin(a*11-t*.9)*amp*.38;
+      const rx=radius+wobble, ry=radius*.58+wobble*.45;
+      const x=c.x+Math.cos(a)*rx;
+      const y=c.y+Math.sin(a)*ry;
+      i===0?waveCtx.moveTo(x,y):waveCtx.lineTo(x,y);
+    }
+    waveCtx.closePath();
+    waveCtx.strokeStyle=`rgba(${color},${.26-band*.055})`;
+    waveCtx.lineWidth=1.4;
+    waveCtx.shadowColor=`rgba(${color},.38)`;
+    waveCtx.shadowBlur=16;
+    waveCtx.stroke();
+  }
+  for(let band=0;band<2;band++){
+    const radius=(70+band*18+Math.sin(t*1.7+band)*5)*waveScale;
+    waveCtx.beginPath();
+    for(let i=0;i<=120;i++){
+      const a=(Math.PI*2*i/120);
+      const wobble=Math.sin(a*7+t*3+band)*10*ampBase*waveScale;
+      const x=c.x+Math.cos(a)*(radius+wobble);
+      const y=c.y+Math.sin(a)*(radius*.72+wobble*.35);
+      i===0?waveCtx.moveTo(x,y):waveCtx.lineTo(x,y);
+    }
+    waveCtx.closePath();
+    waveCtx.strokeStyle=`rgba(${color},${.34-band*.10})`;
+    waveCtx.lineWidth=1.2;
+    waveCtx.shadowColor=`rgba(${color},.52)`;
+    waveCtx.shadowBlur=20;
+    waveCtx.stroke();
+  }
+  waveCtx.shadowBlur=0;
+}
+function draw(){
+  const s=surface.getBoundingClientRect(); lines.setAttribute("viewBox",`0 0 ${s.width} ${s.height}`); lines.setAttribute("width",s.width); lines.setAttribute("height",s.height); lines.innerHTML="";
+  drawPopupTethers();
+}
+function drawPopupTethers(){
+  const s=surface.getBoundingClientRect();
+  tethers.setAttribute("viewBox",`0 0 ${s.width} ${s.height}`);
+  tethers.setAttribute("width",s.width);
+  tethers.setAttribute("height",s.height);
+  tethers.innerHTML="";
+}
+window.addEventListener("resize",()=>{resizeWaveCanvas(); draw();});
+resizeWaveCanvas();
+updateNodePositions(0);
+document.documentElement.classList.add("js-ready");
+draw();
+requestAnimationFrame(placeNodes);
+</script>
+<link rel="stylesheet" href="orbit-assets/orbit.css?v=site-show-47-brand-mark">
+<script src="orbit-assets/orbit-show.js?v=site-show-43-direct-audio"></script>
+<script src="orbit-assets/orbit.js?v=site-show-47-brand-mark"></script>
+</body>
+</html>

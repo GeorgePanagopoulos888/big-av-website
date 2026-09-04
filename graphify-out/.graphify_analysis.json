@@ -1,0 +1,344 @@
+{
+  "communities": {
+    "0": [
+      "script",
+      "script_bradley_script",
+      "script_bradleyaudiosources",
+      "script_bradleybulbimg",
+      "script_bradleycore",
+      "script_bradleyline",
+      "script_demomode",
+      "script_demooutput",
+      "script_demopresetbuttons",
+      "script_demopresets",
+      "script_filamentcanvas",
+      "script_liveatoms",
+      "script_livesystem",
+      "script_livetitle",
+      "script_orbit",
+      "script_orbit_fill_slots",
+      "script_phase2_spawns",
+      "script_signupemail",
+      "script_signupform",
+      "script_skipbtn",
+      "script_spawned",
+      "script_spawntimers",
+      "script_speechvizdata",
+      "script_stagevizcanvas",
+      "script_startbtn",
+      "script_updatespeechviz",
+      "script_voicestatus",
+      "script_wirebookingscta"
+    ],
+    "1": [
+      "bradley_site_show",
+      "bradley_site_show_bakedvoicecache",
+      "bradley_site_show_bindaudioanalyser",
+      "bradley_site_show_bradley_script",
+      "bradley_site_show_bradleyaudiosources",
+      "bradley_site_show_continuous_show_part_starts",
+      "bradley_site_show_ensurebradleyaudiograph",
+      "bradley_site_show_ensurecanvas",
+      "bradley_site_show_fetchlivepart",
+      "bradley_site_show_init",
+      "bradley_site_show_initshowdom",
+      "bradley_site_show_orbit",
+      "bradley_site_show_orbit_compact",
+      "bradley_site_show_orbit_fill_slots",
+      "bradley_site_show_phase2_spawns",
+      "bradley_site_show_readvoiceamplitude",
+      "bradley_site_show_readvoiceamplitudesynthetic",
+      "bradley_site_show_spawned",
+      "bradley_site_show_spawntimers",
+      "bradley_site_show_speechvizdata",
+      "bradley_site_show_stoporbitmotion",
+      "bradley_site_show_updatespeechviz",
+      "bradley_site_show_waitaudiometa",
+      "bradley_site_show_waitaudioplayable"
+    ],
+    "2": [
+      "bradley_site_show_bakedvoiceassets",
+      "bradley_site_show_bakedvoicepath",
+      "bradley_site_show_beatspeakparts",
+      "bradley_site_show_clearshowvisualstate",
+      "bradley_site_show_clearspawntimers",
+      "bradley_site_show_loadbakedparts",
+      "bradley_site_show_loadcachedbakedaudio",
+      "bradley_site_show_loadcontinuousshowaudio",
+      "bradley_site_show_pausecurrentaudio",
+      "bradley_site_show_playaudioonly",
+      "bradley_site_show_playbeataudio",
+      "bradley_site_show_playcaptionfallback",
+      "bradley_site_show_preloadbradleyvoice",
+      "bradley_site_show_preloadcontinuousbradleyshow",
+      "bradley_site_show_resetshow",
+      "bradley_site_show_runbradleyshow",
+      "bradley_site_show_runbradleyshowcontinuous",
+      "bradley_site_show_setcaption",
+      "bradley_site_show_setsitedemostatus",
+      "bradley_site_show_speakbradley",
+      "bradley_site_show_startglow",
+      "bradley_site_show_stopaudio",
+      "bradley_site_show_stopglow",
+      "bradley_site_show_totalbeatduration"
+    ],
+    "3": [
+      "script_bindaudioanalyser",
+      "script_clearspawntimers",
+      "script_createspawnwatcher",
+      "script_ensurebradleyaudiograph",
+      "script_pausecurrentaudio",
+      "script_playaudioonly",
+      "script_playbeataudio",
+      "script_readvoiceamplitude",
+      "script_readvoiceamplitudesynthetic",
+      "script_resolvespawnsec",
+      "script_startglow",
+      "script_stopaudio",
+      "script_totalbeatduration"
+    ],
+    "4": [
+      "script_ensureorbitmotion",
+      "script_nextopenorbitslot",
+      "script_orbitacceleratetransition",
+      "script_orbitloop",
+      "script_orbitslotcoords",
+      "script_positiononorbit",
+      "script_runorbitswap",
+      "script_slotforscreenbias",
+      "script_slotnearscreenangle",
+      "script_slotseparation",
+      "script_spawnatom",
+      "script_spawnphase2orbit",
+      "script_usedorbitslots"
+    ],
+    "5": [
+      "script_bakedvoicepath",
+      "script_beatspeakparts",
+      "script_fetchlivepart",
+      "script_loadbakedparts",
+      "script_preloadbradleyvoice",
+      "script_resetshow",
+      "script_runbradleyshow",
+      "script_schedulespawncues",
+      "script_setcaption",
+      "script_setvoicestatus",
+      "script_speakbradley",
+      "script_waitaudiometa"
+    ],
+    "6": [
+      "bradley_site_show_activeorbitconfig",
+      "bradley_site_show_compactstagemode",
+      "bradley_site_show_nextopenorbitslot",
+      "bradley_site_show_orbitslotcoords",
+      "bradley_site_show_positiononorbit",
+      "bradley_site_show_schedulespawncues",
+      "bradley_site_show_slotforscreenbias",
+      "bradley_site_show_slotnearscreenangle",
+      "bradley_site_show_slotseparation",
+      "bradley_site_show_spawnatom",
+      "bradley_site_show_usedorbitslots"
+    ],
+    "7": [
+      "bradley_app_frame",
+      "bradley_app_frame_activestagewidth",
+      "bradley_app_frame_bradleyappframe",
+      "bradley_app_frame_bradleyappstage",
+      "bradley_app_frame_drawwaves",
+      "bradley_app_frame_initbradleyappframe",
+      "bradley_app_frame_resizebradleyappviz",
+      "bradley_app_frame_setbradleyappspeaking",
+      "bradley_app_frame_speechvizdata",
+      "bradley_app_frame_updatespeechviz"
+    ],
+    "8": [
+      "bradley_orbit_site",
+      "bradley_orbit_site_initsitemode",
+      "bradley_orbit_site_injectdemobar",
+      "bradley_orbit_site_mutemic",
+      "bradley_orbit_site_refreshsitegeometry",
+      "bradley_orbit_site_schedulesitegeometryrefresh",
+      "bradley_orbit_site_scrollparentto",
+      "bradley_orbit_site_setsiteherocopy",
+      "bradley_orbit_site_warmshowassets",
+      "bradley_orbit_site_wiretabs"
+    ],
+    "9": [
+      "bradley_site_show_applybradleybulblook",
+      "bradley_site_show_applyvoiceamp",
+      "bradley_site_show_bradleycorecenter",
+      "bradley_site_show_bulbbreathlevel",
+      "bradley_site_show_drawbradleystage",
+      "bradley_site_show_drawbradleystageglow",
+      "bradley_site_show_drawbradleyvoicewaves",
+      "bradley_site_show_drawfilamentglow",
+      "bradley_site_show_resizefilamentcanvas",
+      "bradley_site_show_resizestagevizcanvas"
+    ],
+    "10": [
+      "script_bradleycorecenter",
+      "script_drawbradleystage",
+      "script_drawbradleystageglow",
+      "script_drawbradleyvoicewaves",
+      "script_drawfilamentglow",
+      "script_resizebradleyviz",
+      "script_resizefilamentcanvas",
+      "script_resizestagevizcanvas"
+    ],
+    "11": [
+      "bradley_site_show_ensureorbitmotion",
+      "bradley_site_show_orbitacceleratetransition",
+      "bradley_site_show_orbitloop",
+      "bradley_site_show_orbitpositionsfrozen",
+      "bradley_site_show_runorbitswap",
+      "bradley_site_show_spawnphase2orbit"
+    ],
+    "12": [
+      "script_applybradleybulblook",
+      "script_applyvoiceamp",
+      "script_bulbbreathlevel",
+      "script_startidlebulbbreath",
+      "script_stopglow"
+    ],
+    "13": [
+      "bradley_site_show_continuous_show_beat_starts",
+      "bradley_site_show_continuousspawnsec",
+      "bradley_site_show_schedulecontinuousshowevents",
+      "bradley_site_show_scheduleshowtimer"
+    ],
+    "14": [
+      "bradley_site_show_createspawnwatcher",
+      "bradley_site_show_resolvespawnsec"
+    ]
+  },
+  "cohesion": {
+    "0": 0.07142857142857142,
+    "1": 0.10144927536231885,
+    "2": 0.18478260869565216,
+    "3": 0.19230769230769232,
+    "4": 0.24358974358974358,
+    "5": 0.22727272727272727,
+    "6": 0.2909090909090909,
+    "7": 0.35555555555555557,
+    "8": 0.37777777777777777,
+    "9": 0.2,
+    "10": 0.25,
+    "11": 0.4,
+    "12": 0.8,
+    "13": 0.5,
+    "14": 1.0
+  },
+  "gods": [
+    {
+      "id": "bradley_site_show_runbradleyshowcontinuous",
+      "label": "runBradleyShowContinuous()",
+      "degree": 13
+    },
+    {
+      "id": "bradley_site_show_spawnatom",
+      "label": "spawnAtom()",
+      "degree": 11
+    },
+    {
+      "id": "bradley_site_show_runbradleyshow",
+      "label": "runBradleyShow()",
+      "degree": 11
+    },
+    {
+      "id": "script_speakbradley",
+      "label": "speakBradley()",
+      "degree": 11
+    },
+    {
+      "id": "bradley_site_show_setsitedemostatus",
+      "label": "setSiteDemoStatus()",
+      "degree": 10
+    },
+    {
+      "id": "script_spawnatom",
+      "label": "spawnAtom()",
+      "degree": 10
+    },
+    {
+      "id": "bradley_site_show_schedulecontinuousshowevents",
+      "label": "scheduleContinuousShowEvents()",
+      "degree": 9
+    },
+    {
+      "id": "bradley_site_show_playbeataudio",
+      "label": "playBeatAudio()",
+      "degree": 8
+    },
+    {
+      "id": "bradley_site_show_speakbradley",
+      "label": "speakBradley()",
+      "degree": 8
+    },
+    {
+      "id": "script_playbeataudio",
+      "label": "playBeatAudio()",
+      "degree": 8
+    }
+  ],
+  "surprises": [
+    {
+      "source": "init()",
+      "target": "setSiteDemoStatus()",
+      "source_files": [
+        "bradley-site-show.js",
+        "bradley-site-show.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "note": "Bridges community 2 \u2192 community 1"
+    },
+    {
+      "source": "scheduleContinuousShowEvents()",
+      "target": "setSiteDemoStatus()",
+      "source_files": [
+        "bradley-site-show.js",
+        "bradley-site-show.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "note": "Bridges community 2 \u2192 community 13"
+    },
+    {
+      "source": "orbitLoop()",
+      "target": "positionOnOrbit()",
+      "source_files": [
+        "bradley-site-show.js",
+        "bradley-site-show.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "note": "Bridges community 6 \u2192 community 11"
+    },
+    {
+      "source": "runBradleyShow()",
+      "target": "ensureOrbitMotion()",
+      "source_files": [
+        "bradley-site-show.js",
+        "bradley-site-show.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "note": "Bridges community 11 \u2192 community 2"
+    },
+    {
+      "source": "resolveSpawnSec()",
+      "target": "totalBeatDuration()",
+      "source_files": [
+        "bradley-site-show.js",
+        "bradley-site-show.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "note": "Bridges community 14 \u2192 community 2"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}
