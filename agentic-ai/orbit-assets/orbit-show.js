@@ -39,7 +39,7 @@ const ALLOW_LIVE_TTS =
   location.protocol === "http:" &&
   (location.hostname === "127.0.0.1" || location.hostname === "localhost");
 
-const BRADLEY_BUILD = "site-show-43-direct-audio";
+const BRADLEY_BUILD = "site-show-48-embedded";
 
 console.info("[Bradley] loaded", BRADLEY_BUILD, {
   ringSlots: ORBIT_FILL_SLOTS.length,
@@ -236,6 +236,7 @@ function initShowDom() {
 }
 
 let showRunning = false;
+let showSession = 0;
 let glowRaf = 0;
 let glowSmooth = 0;
 let bradleyAudioCtx = null;
@@ -249,6 +250,7 @@ let continuousShowWarmupPromise = null;
 let continuousShowReady = false;
 let continuousShowLastResult = null;
 let currentAudio = null;
+let cancelCurrentPlayback = null;
 let spawnTimers = [];
 let spawnRaf = 0;
 let phase1SlotIdx = 0;
@@ -295,6 +297,7 @@ function pauseCurrentAudio() {
 
 function stopAudio() {
   clearSpawnTimers();
+  if (cancelCurrentPlayback) cancelCurrentPlayback();
   pauseCurrentAudio();
 }
 
@@ -360,6 +363,7 @@ function ensureOrbitMotion() {
 
 async function orbitAccelerateTransition() {
   if (!liveAtoms) return;
+  const session = showSession;
   const nodes = [...liveAtoms.querySelectorAll(".live-node")];
   if (!nodes.length) return;
 
@@ -371,6 +375,7 @@ async function orbitAccelerateTransition() {
 
   await new Promise((resolve) => {
     const whip = (ts) => {
+      if (session !== showSession) { resolve(); return; }
       const t = Math.min(1, (ts - start) / whipMs);
       orbitPeriodCurrent = startPeriod + (endPeriod - startPeriod) * t * t;
       if (t < 1) requestAnimationFrame(whip);
@@ -379,8 +384,10 @@ async function orbitAccelerateTransition() {
     requestAnimationFrame(whip);
   });
 
+  if (session !== showSession) return;
   nodes.forEach((node) => node.classList.add("live-node--exit"));
   await new Promise((r) => setTimeout(r, 420));
+  if (session !== showSession) return;
 
   if (liveAtoms) liveAtoms.innerHTML = "";
   spawned.clear();
@@ -633,36 +640,34 @@ function bindAudioAnalyser(audio) {
 }
 
 async function playAudioOnly(audio) {
+  if (!showRunning) throw new DOMException("Playback stopped", "AbortError");
   pauseCurrentAudio();
   audio.pause();
-  try {
-    audio.currentTime = 0;
-  } catch {
-    /* Some browsers only allow seek after metadata is ready. */
-  }
+  audio.currentTime = 0;
   currentAudio = audio;
   bindAudioAnalyser(audio);
 
-  const tryPlay = () =>
-    new Promise((resolve, reject) => {
-      audio.onended = () => {
-        currentAudio = null;
-        resolve();
-      };
-      audio.onerror = () => {
-        currentAudio = null;
-        reject(new Error("playback failed"));
-      };
-      audio.play().catch(reject);
-    });
-
-  try {
-    await tryPlay();
-  } catch {
-    audio.load();
-    await new Promise((r) => setTimeout(r, 120));
-    await tryPlay();
-  }
+  await new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      settled = true;
+      audio.onended = null;
+      audio.onerror = null;
+      cancelCurrentPlayback = null;
+      if (currentAudio === audio) currentAudio = null;
+    };
+    const fail = (error) => {
+      if (settled) return;
+      audio.pause();
+      audio.currentTime = 0;
+      cleanup();
+      reject(error);
+    };
+    cancelCurrentPlayback = () => fail(new DOMException("Playback stopped", "AbortError"));
+    audio.onended = () => { cleanup(); resolve(); };
+    audio.onerror = () => fail(new Error("Playback failed"));
+    audio.play().catch(fail);
+  });
 }
 
 async function loadBakedParts(beat) {
@@ -688,9 +693,10 @@ function totalBeatDuration(audios, pauseMs, beat) {
 }
 
 async function runOrbitSwap(beat) {
+  const session = showSession;
   await orbitAccelerateTransition();
 
-  if (!showRunning) return;
+  if (!showRunning || session !== showSession) return;
 
   spawnPhase2Orbit(beat.phase2Spawns || PHASE2_SPAWNS);
 }
@@ -720,38 +726,40 @@ async function playBeatAudio(audios, beat) {
     spawnTimers.push(orbitSwapTimer);
   }
 
-  for (let i = 0; i < audios.length; i += 1) {
-    if (i > 0 && pauseMs) {
-      await new Promise((r) => setTimeout(r, pauseMs));
-      partOffsetSec += pauseMs / 1000;
-    }
-    if (!showRunning) break;
+  try {
+    for (let i = 0; i < audios.length; i += 1) {
+      if (i > 0 && pauseMs) {
+        await new Promise((r) => setTimeout(r, pauseMs));
+        partOffsetSec += pauseMs / 1000;
+      }
+      if (!showRunning) break;
 
-    const shouldSwapOnPart = beat.orbitSwapOnPart === i || beat.orbitResetOnPart === i;
-    spawnWatcher.attach(audios[i], partOffsetSec);
+      const shouldSwapOnPart = beat.orbitSwapOnPart === i || beat.orbitResetOnPart === i;
+      spawnWatcher.attach(audios[i], partOffsetSec);
 
-    if (shouldSwapOnPart) {
-      const audioDone = playAudioOnly(audios[i]);
-      const delayMs = Math.max(0, beat.orbitSwapDelayMs ?? 0);
+      if (shouldSwapOnPart) {
+        const audioDone = playAudioOnly(audios[i]);
+        const delayMs = Math.max(0, beat.orbitSwapDelayMs ?? 0);
 
-      if (delayMs) {
-        const timer = window.setTimeout(fireOrbitSwap, delayMs);
-        spawnTimers.push(timer);
-      } else {
-        fireOrbitSwap();
+        if (delayMs) {
+          const timer = window.setTimeout(fireOrbitSwap, delayMs);
+          spawnTimers.push(timer);
+        } else {
+          fireOrbitSwap();
+        }
+
+        await audioDone;
+        partOffsetSec += audios[i].duration || 0;
+        continue;
       }
 
-      await audioDone;
+      await playAudioOnly(audios[i]);
       partOffsetSec += audios[i].duration || 0;
-      continue;
     }
-
-    await playAudioOnly(audios[i]);
-    partOffsetSec += audios[i].duration || 0;
+  } finally {
+    spawnWatcher.cleanup();
+    if (orbitSwapTimer) window.clearTimeout(orbitSwapTimer);
   }
-
-  spawnWatcher.cleanup();
-  if (orbitSwapTimer) window.clearTimeout(orbitSwapTimer);
   if (orbitSwapPromise) await orbitSwapPromise;
 }
 
@@ -801,7 +809,8 @@ async function speakBradley(beat) {
     await playBeatAudio(audios, beat);
     setSiteDemoStatus("Bradley is speaking");
     return true;
-  } catch {
+  } catch (error) {
+    if (!showRunning || error.name === "AbortError") throw error;
     /* try live TTS when developing */
   }
 
@@ -817,7 +826,8 @@ async function speakBradley(beat) {
     await playBeatAudio(audios, beat);
     setSiteDemoStatus("Bradley is speaking · live");
     return true;
-  } catch {
+  } catch (error) {
+    if (!showRunning || error.name === "AbortError") throw error;
     return playCaptionFallback(beat, fullText);
   }
 }
@@ -1225,8 +1235,7 @@ function spawnAtom({ id, label, rgb, slot: fixedSlot, spawnAngle, screenBias, av
   if (used.has(slot)) slot = nextOpenOrbitSlot();
   phase1SlotIdx += 1;
 
-  const node = document.createElement("button");
-  node.type = "button";
+  const node = document.createElement("div");
   node.className = "live-node";
   node.dataset.id = id;
   node.dataset.slot = String(slot);
@@ -1246,6 +1255,7 @@ function spawnAtom({ id, label, rgb, slot: fixedSlot, spawnAngle, screenBias, av
 function setCaption(text) {
   if (!bradleyLine) return;
   bradleyLine.textContent = String(text || "").trim();
+  if (typeof resizeWaveCanvas === "function") resizeWaveCanvas();
 }
 
 function scheduleShowTimer(delayMs, fn) {
@@ -1292,7 +1302,7 @@ async function runBradleyShowContinuous() {
   if (showRunning) return;
   if (startBtn) {
     startBtn.disabled = true;
-    startBtn.textContent = "Loading show...";
+    startBtn.textContent = "Loading...";
   }
   const audio = await loadContinuousShowAudio();
   clearShowVisualState();
@@ -1302,7 +1312,7 @@ async function runBradleyShowContinuous() {
 
   if (startBtn) {
     startBtn.disabled = true;
-    startBtn.textContent = "Bradley is speaking...";
+    startBtn.textContent = "Playing...";
   }
 
   try {
@@ -1311,18 +1321,21 @@ async function runBradleyShowContinuous() {
     await playAudioOnly(audio);
     completed = showRunning;
   } catch (error) {
-    console.error("[Bradley] continuous show interrupted", error);
+    if (error.name !== "AbortError") {
+      console.error("[Bradley] continuous show interrupted", error);
+      setSiteDemoStatus("Playback unavailable. Please try again.", true);
+    }
     setCaption("");
-    setSiteDemoStatus("Show reset · tap to retry", true);
     clearShowVisualState();
   } finally {
     stopGlow();
     clearSpawnTimers();
     pauseCurrentAudio();
     showRunning = false;
+    if (completed) setSiteDemoStatus("Demonstration complete");
     if (startBtn) {
       startBtn.disabled = false;
-      startBtn.textContent = completed ? "Run it again" : "Let Bradley speak";
+      startBtn.textContent = "Replay";
     }
   }
 }
@@ -1335,7 +1348,7 @@ async function runBradleyShow() {
   if (showRunning) return;
   if (startBtn) {
     startBtn.disabled = true;
-    startBtn.textContent = "Loading show…";
+    startBtn.textContent = "Loading...";
   }
   await preloadBradleyVoice();
   clearShowVisualState();
@@ -1345,7 +1358,7 @@ async function runBradleyShow() {
 
   if (startBtn) {
     startBtn.disabled = true;
-    startBtn.textContent = "Bradley is speaking…";
+    startBtn.textContent = "Playing...";
   }
   try {
     for (const beat of BRADLEY_SCRIPT) {
@@ -1359,30 +1372,34 @@ async function runBradleyShow() {
     }
     completed = showRunning;
   } catch (error) {
-    console.error("[Bradley] show interrupted", error);
+    if (error.name !== "AbortError") {
+      console.error("[Bradley] show interrupted", error);
+      setSiteDemoStatus("Playback unavailable. Please try again.", true);
+    }
     setCaption("");
-    setSiteDemoStatus("Show reset · tap to retry", true);
     clearShowVisualState();
   } finally {
     stopGlow();
     clearSpawnTimers();
     pauseCurrentAudio();
     showRunning = false;
+    if (completed) setSiteDemoStatus("Demonstration complete");
     if (startBtn) {
       startBtn.disabled = false;
-      startBtn.textContent = completed ? "Run it again" : "Let Bradley speak";
+      startBtn.textContent = "Replay";
     }
   }
 }
 
 function resetShow() {
+  showSession += 1;
+  showRunning = false;
   clearShowVisualState();
   setCaption("");
-  setSiteDemoStatus("Live demo");
-  showRunning = false;
+  setSiteDemoStatus("Ready to play");
   if (startBtn) {
     startBtn.disabled = false;
-    startBtn.textContent = "Let Bradley speak";
+    startBtn.textContent = "Play demonstration";
   }
 }
 
@@ -1395,20 +1412,20 @@ async function preloadContinuousBradleyShow() {
   if (continuousShowWarmupPromise) return continuousShowWarmupPromise;
 
   continuousShowWarmupPromise = (async () => {
-    setSiteDemoStatus("Loading show");
+    setSiteDemoStatus("Loading demonstration");
     try {
       await loadContinuousShowAudio();
       const result = { loaded: 1, failed: 0, total: 1, continuous: true };
       continuousShowLastResult = result;
       continuousShowReady = true;
-      if (!showRunning) setSiteDemoStatus("Show ready");
+      if (!showRunning) setSiteDemoStatus("Ready to play");
       return result;
     } catch (error) {
       continuousShowWarmupPromise = null;
       continuousShowReady = false;
       continuousShowLastResult = { loaded: 0, failed: 1, total: 1, continuous: true };
       console.warn("[Bradley] continuous show failed", error);
-      if (!showRunning) setSiteDemoStatus("Show unavailable", true);
+      if (!showRunning) setSiteDemoStatus("Demo unavailable", true);
       return continuousShowLastResult;
     }
   })();
@@ -1438,7 +1455,7 @@ async function preloadBradleyVoice() {
     }
 
     if (!showRunning) {
-      setSiteDemoStatus(failed ? `Show ready · ${loaded}/${assets.length}` : "Show ready");
+      setSiteDemoStatus(failed ? `Show ready · ${loaded}/${assets.length}` : "Ready to play");
     }
     const result = { loaded, failed, total: assets.length };
     bakedVoiceLastResult = result;
@@ -1452,7 +1469,7 @@ async function preloadBradleyVoice() {
 
 function init() {
   initShowDom();
-  setSiteDemoStatus("Live demo");
+  setSiteDemoStatus("Recorded demonstration");
 }
 
 window.BradleySiteShow = {
@@ -1463,6 +1480,11 @@ window.BradleySiteShow = {
     await runBradleyShow();
   },
   reset: resetShow,
+  stop: () => {
+    resetShow();
+    setSiteDemoStatus("Stopped");
+    if (startBtn) startBtn.textContent = "Replay";
+  },
   preload: preloadBradleyVoice,
   isReady: () => (USE_CONTINUOUS_SHOW_AUDIO ? continuousShowReady : bakedVoiceReady),
 };

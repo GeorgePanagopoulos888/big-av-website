@@ -4,7 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
-<title>Bradley | BIG AV</title>
+<title>Bradley demonstration | BIG AV</title>
+<script>if(new URLSearchParams(location.search).get("embedded")==="1") document.documentElement.classList.add("embedded-demo");</script>
 <style>
 @font-face{font-family:BigAVDisplay;src:url("orbit-assets/fonts/Outfit-Bold.ttf")}
 @font-face{font-family:BigAVBody;src:url("orbit-assets/fonts/InstrumentSans-Regular.ttf")}
@@ -106,12 +107,17 @@ body.speaking .core img{animation:pulseSpeak .95s ease-in-out infinite}
 <body class="site-mode">
 <div class="ribbon top"></div><div class="ribbon bottom"></div>
 <main class="app">
-  <section class="main" id="surface">
-    <div class="top">
-      <div class="title">Bradley</div>
-      <div class="sub">Meet Bradley - BIG AV's butler intelligence for homes, offices, and venues. One calm layer that listens, decides, and sets rooms in motion.</div>
-    </div>
-    <div class="tabs"><button class="on">Bradley</button><button>Why</button><button>Home</button><button>Work</button><button>Contact</button></div>
+  <section class="main">
+    <header class="demo-site-header">
+      <a class="demo-site-brand" href="/" target="_top">BIG AV</a>
+      <nav aria-label="BIG AV navigation">
+        <a href="/agentic-ai/" target="_top">About Bradley</a>
+        <a href="/markets/residential.html" target="_top">Residential</a>
+        <a href="/markets/commercial.html" target="_top">Commercial</a>
+        <a href="/contact.html" target="_top">Contact</a>
+      </nav>
+    </header>
+    <div class="demo-stage" id="surface" aria-hidden="true">
 
     <div class="system" id="system">
       <div class="orbit-line l1"></div><div class="orbit-line l2"></div><div class="orbit-line l3"></div><div class="orbit-line l4"></div>
@@ -123,7 +129,8 @@ body.speaking .core img{animation:pulseSpeak .95s ease-in-out infinite}
     <svg id="lines"></svg>
     <svg id="popupTethers"></svg>
     <canvas class="voice-waves" id="voiceWaves"></canvas>
-    <div class="core" id="core"><img src="../assets/bulb.webp" alt="Bradley"></div>
+    <div class="core" id="core"><img src="../assets/bulb.webp" alt=""></div>
+    </div>
   </section>
 </main>
 <script>
@@ -333,8 +340,8 @@ document.documentElement.classList.add("js-ready");
 draw();
 requestAnimationFrame(placeNodes);
 </script>
-<link rel="stylesheet" href="orbit-assets/orbit.css?v=site-show-47-brand-mark">
-<script src="orbit-assets/orbit-show.js?v=site-show-43-direct-audio"></script>
-<script src="orbit-assets/orbit.js?v=site-show-47-brand-mark"></script>
+<link rel="stylesheet" href="orbit-assets/orbit.css?v=site-show-48-embedded">
+<script src="orbit-assets/orbit-show.js?v=site-show-48-embedded"></script>
+<script src="orbit-assets/orbit.js?v=site-show-48-embedded"></script>
 </body>
 </html>
