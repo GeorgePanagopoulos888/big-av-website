@@ -21,7 +21,7 @@ button,a{-webkit-tap-highlight-color:rgba(200,160,88,.2)}
 header{border-bottom:1px solid var(--line)}
 header .wrap{display:flex;justify-content:space-between;align-items:center;padding-top:22px;padding-bottom:22px;gap:24px;position:relative}
 .mark{display:flex;align-items:center;gap:18px;flex-shrink:0}
-.mark img{height:64px;width:auto}
+.mark img{height:84px;width:auto}
 .mark .div{font:400 11px/1.5 Poppins,sans-serif;color:var(--chrome);border-left:1px solid var(--rule);padding-left:18px}
 nav.main{display:flex;gap:28px;align-items:center;font-size:14px}
 nav.main a{color:var(--mute);padding:8px 0}
@@ -157,7 +157,7 @@ footer .legal a{color:var(--chrome)}
 }
 @media(max-width:600px){
  .wrap{padding-left:24px;padding-right:24px}body{font-size:16px}.specbar{font-size:11px}.specbar .wrap span:first-child{display:none}
- header .wrap{padding-top:18px;padding-bottom:18px;gap:12px}.mark{align-items:flex-start;flex-direction:column;gap:6px}.mark img{height:44px}.mark .div{display:block;font-size:9px;line-height:1.4;border:0;padding:0}.mark .div br{display:none}
+ header .wrap{padding-top:18px;padding-bottom:18px;gap:12px}.mark{align-items:flex-start;flex-direction:column;gap:6px}.mark img{height:56px}.mark .div{display:block;font-size:9px;line-height:1.4;border:0;padding:0}.mark .div br{display:none}
  nav.main{right:24px;left:24px;min-width:0}.hero .inner{padding-top:60px;padding-bottom:38px}.hero .kicker{font-size:12px;max-width:26ch}.hero h1{font-size:clamp(38px,9vw,54px)}.hero .sub>p{font-size:16px}.hero .bg{background-position:58% center}.hero .affiliation{margin-top:32px}
  .pagehero{padding:40px 0 28px}.pagehero h1{font-size:clamp(32px,8.5vw,46px)}.pagehero .lede{margin-top:22px}.actions{gap:16px 22px}.sect{padding:44px 0}.sect.first{padding-top:16px}body[data-page="home"] .sect.first{padding-top:44px}
  .section-heading{margin-bottom:24px}.section-heading h2 br{display:none}.vrow{grid-template-columns:minmax(0,1fr) 88px;gap:16px;padding:20px 0}.vrow img{width:88px}.vrow .nm{font-size:17px}.vrow .nm span{font-size:12px}
